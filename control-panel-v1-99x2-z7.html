@@ -46,8 +46,7 @@
         const sb = window.supabase.createClient("https://dakhnqriwbzihlzhtfcb.supabase.co", "sb_publishable_rRcNEvZ9n0IEJzTQcK90nQ_5lfwSDYs");
         let currentType = 'deposits';
 
-        // ⚠️ CONFIGURACIÓN DE SEGURIDAD EXCLUSIVA
-        // REEMPLAZA ESTE CORREO POR TU CORREO REAL DE ADMINISTRADOR EXACTAMENTE COMO ESTÁ EN SUPABASE
+        // CONFIGURACIÓN DE SEGURIDAD EXCLUSIVA (Pon aquí tu mismo correo que en casino5.html)
         const CORREO_ADMIN_AUTORIZADO = "ed8108868@gmail.com"; 
 
         const AdminAuth = {
@@ -60,13 +59,11 @@
                     return;
                 }
 
-                // 1. Validar primero si el correo coincide con el dueño del casino
                 if (email !== CORREO_ADMIN_AUTORIZADO.toLowerCase()) {
                     alert("Acceso denegado: Este correo electrónico no tiene permisos de administrador.");
                     return;
                 }
 
-                // 2. Si el correo es correcto, verificar la contraseña con Supabase
                 const { data, error } = await sb.auth.signInWithPassword({ email: email, password: password });
 
                 if (error) {
@@ -77,11 +74,9 @@
             },
             async checkSession() {
                 const { data: { session } } = await sb.auth.getSession();
-                // Al recargar, valida que la sesión activa pertenezca estrictamente a tu correo
                 if (session && session.user.email.toLowerCase() === CORREO_ADMIN_AUTORIZADO.toLowerCase()) {
                     this.showPanel();
                 } else if (session) {
-                    // Si un usuario común intenta quedarse logueado en el panel, lo saca de inmediato
                     await sb.auth.signOut();
                 }
             },
@@ -124,6 +119,24 @@
 
             data.forEach(item => {
                 const currentSaldo = item.usuarios ? item.usuarios.saldo : 0;
+                
+                // Procesamiento inteligente de textos para la sección de retiros
+                let bancoDisplay = item.bank_name || 'No especificado';
+                let titularDisplay = 'No especificado';
+                let clabeDisplay = 'No especificado';
+
+                if (!isDeposit && item.account_holder) {
+                    // Separar el titular y la cuenta CLABE guardados bajo el formato del casino
+                    if (item.account_holder.includes('| CLABE:')) {
+                        const partes = item.account_holder.split('| CLABE:');
+                        titularDisplay = partes[0].trim();
+                        clabeDisplay = partes[1].trim();
+                    } else {
+                        titularDisplay = item.account_holder;
+                    }
+                } else if (isDeposit) {
+                    titularDisplay = item.account_holder || 'No especificado';
+                }
 
                 container.innerHTML += `
                     <div class="bg-zinc-900 p-6 rounded-[2rem] border border-white/5 flex items-center justify-between">
@@ -139,8 +152,9 @@
                                 </p>
                                 <div class="mt-2 space-y-1">
                                     <p class="text-[10px] text-zinc-500 font-mono">USUARIO ID: ${item.user_id}</p>
-                                    <p class="text-[11px] text-white font-bold bg-white/5 px-2 py-1 rounded w-fit">BANCO: ${item.bank_name || 'No especificado'}</p>
-                                    <p class="text-[11px] text-zinc-300 italic">TITULAR / CLABE: ${item.account_holder || 'No especificado'}</p>
+                                    <p class="text-[11px] text-white font-bold bg-white/5 px-2 py-1 rounded w-fit">BANCO: ${bancoDisplay}</p>
+                                    <p class="text-[11px] text-zinc-300 italic">TITULAR: ${titularDisplay}</p>
+                                    ${!isDeposit ? `<p class="text-[11px] text-yellow-500 font-mono bg-yellow-500/10 px-2 py-0.5 rounded w-fit">CLABE: ${clabeDisplay}</p>` : ''}
                                     <p class="text-[10px] text-zinc-400 uppercase">SALDO ACTUAL DEL JUGADOR: $${currentSaldo}</p>
                                 </div>
                             </div>
@@ -195,6 +209,12 @@
         }
 
         AdminAuth.checkSession();
+        setInterval(() => {
+            const viewLogin = document.getElementById('admin-login-view');
+            if (viewLogin && viewLogin.classList.contains('hidden-view')) {
+                loadPending();
+            }
+        }, 5000);
     </script>
 </body>
 </html>
