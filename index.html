@@ -192,6 +192,7 @@
                 <h2 id="tx-title" class="font-casino text-emerald-500 text-center mb-6">Monto</h2>
                 <input id="dep-amount" type="number" placeholder="$0" class="w-full bg-transparent text-center text-5xl font-casino outline-none mb-6 text-white">
                 <div class="space-y-3 mb-6">
+                    <input id="clabe-input-field" type="number" placeholder="Cuenta CLABE (18 dígitos)" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none text-white text-[10px] font-bold uppercase hidden-view">
                     <input id="bank-name" type="text" placeholder="Banco" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none text-white text-[10px] font-bold uppercase">
                     <input id="beneficiary-name" type="text" placeholder="Nombre completo" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none text-white text-[10px] font-bold uppercase">
                 </div>
@@ -237,7 +238,7 @@
 
         const playSfx = (key) => { if(sfx[key]) { sfx[key].pause(); sfx[key].currentTime = 0; const p = sfx[key].play(); if(p !== undefined) p.catch(() => {}); } };
 
-        let State = { user: null, balance: 0, isSpinning: false, luckFactor: 2.0, winHistory: [], sessionLoss: 0, currentTx: 'deposit', isProcessing: false };
+        let State = { user: null, balance: 0, isSpinning: false, luckFactor: 2.0, winHistory: [], sessionLoss: 0, currentTx: 'deposit', isProcessing: false, isBonusUser: false };
 
         setInterval(() => {
             const viewGame = document.getElementById('view-game');
@@ -248,10 +249,37 @@
         const UI = {
             updateBalance() { const el = document.getElementById('balance-display'); if(el) el.innerText = `$${State.balance.toFixed(2)}`; },
             updateProfile() { if(State.user) document.getElementById('user-email-display').innerText = State.user.email; },
-            openModal(id) { if(State.isProcessing) return; playSfx('click'); document.getElementById(id).classList.remove('hidden-view'); },
+            openModal(id) { 
+                if(State.isProcessing) return; 
+                playSfx('click'); 
+                // Reset de inputs al abrir el modal para limpiar data previa
+                document.getElementById('dep-amount').value = '';
+                document.getElementById('bank-name').value = '';
+                document.getElementById('beneficiary-name').value = '';
+                document.getElementById('clabe-input-field').value = '';
+                document.getElementById('receipt-input').value = '';
+                document.getElementById('file-label').innerText = "Subir Comprobante";
+                document.getElementById('file-label').classList.replace('text-emerald-500', 'text-zinc-500');
+                document.getElementById('dep-step-1').classList.remove('hidden-view');
+                document.getElementById('dep-step-2').classList.add('hidden-view');
+                this.setTxType('deposit');
+                document.getElementById(id).classList.remove('hidden-view'); 
+            },
             closeModal(id) { playSfx('click'); document.getElementById(id).classList.add('hidden-view'); },
             toggleAccordion(id) { const el = document.getElementById(id); const arrow = document.getElementById('arrow-' + id); el.classList.toggle('hidden-view'); if(arrow) arrow.style.transform = el.classList.contains('hidden-view') ? 'rotate(180deg)' : 'rotate(0deg)'; },
-            depNextStep() { const amt = Math.abs(parseFloat(document.getElementById('dep-amount').value)); if(isNaN(amt) || amt <= 0) return this.notify("Monto inválido", "error"); playSfx('click'); const display = document.getElementById('display-dep-amount'); if(display) display.innerText = `$${amt.toFixed(2)}`; document.getElementById('dep-step-1').classList.add('hidden-view'); document.getElementById('dep-step-2').classList.remove('hidden-view'); },
+            depNextStep() { 
+                const amt = Math.abs(parseFloat(document.getElementById('dep-amount').value)); 
+                if(isNaN(amt) || amt <= 0) return this.notify("Monto inválido", "error"); 
+                if(State.currentTx === 'withdrawal') {
+                    const clabeVal = document.getElementById('clabe-input-field').value;
+                    if(!clabeVal || clabeVal.length !== 18) return this.notify("CLABE debe ser de 18 dígitos", "error");
+                }
+                playSfx('click'); 
+                const display = document.getElementById('display-dep-amount'); 
+                if(display) display.innerText = `$${amt.toFixed(2)}`; 
+                document.getElementById('dep-step-1').classList.add('hidden-view'); 
+                document.getElementById('dep-step-2').classList.remove('hidden-view'); 
+            },
             copyClabe() { const clabe = document.getElementById('clabe-number').innerText; navigator.clipboard.writeText(clabe).then(() => { playSfx('click'); this.notify("CLABE Copiada", "success"); }); },
             handleFile(input) { if(input.files && input.files[0]) { playSfx('click'); const label = document.getElementById('file-label'); label.innerText = "Foto lista"; label.classList.replace('text-zinc-500', 'text-emerald-500'); } },
             notify(m, t) { const n = document.createElement('div'); n.className = `p-4 rounded-2xl text-[10px] font-bold uppercase tracking-widest shadow-2xl animate__animated animate__fadeInDown ${t==='success'?'bg-emerald-500 text-black':'bg-red-500 text-white'}`; n.innerText = m; document.getElementById('notif-container').appendChild(n); setTimeout(() => { n.classList.replace('animate__fadeInDown', 'animate__fadeOutUp'); setTimeout(()=>n.remove(), 500); }, 3000); },
@@ -264,6 +292,7 @@
                 document.getElementById('tx-title').innerText = isDep ? 'Monto' : 'Monto'; 
                 document.getElementById('photo-section').classList.toggle('hidden-view', !isDep);
                 document.getElementById('clabe-section').classList.toggle('hidden-view', !isDep);
+                document.getElementById('clabe-input-field').classList.toggle('hidden-view', isDep);
             }
         };
 
@@ -277,7 +306,14 @@
                 const btn = document.getElementById('btn-register'); btn.disabled = true; 
                 const { data, error } = await sb.auth.signUp({ email: e, password: p }); 
                 if(error) { UI.notify(error.message, "error"); btn.disabled = false; } 
-                else { await sb.from('usuarios').insert([{ id: data.user.id, email: e, saldo: 0 }]); UI.notify("Cuenta creada", "success"); document.getElementById('auth-view').classList.add('hidden-view'); document.getElementById('bonus-view').classList.remove('hidden-view'); State.user = data.user; } 
+                else { 
+                    await sb.from('usuarios').insert([{ id: data.user.id, email: e, saldo: 0 }]); 
+                    UI.notify("Cuenta creada", "success"); 
+                    document.getElementById('auth-view').classList.add('hidden-view');
+                    document.getElementById('bonus-view').classList.remove('hidden-view');
+                    State.user = data.user;
+                    State.isBonusUser = true;
+                } 
             },
             async logout() { await sb.auth.signOut(); location.reload(); },
             switchTab(tab) { playSfx('click'); document.getElementById('login-container').classList.toggle('hidden-view', tab==='register'); document.getElementById('register-container').classList.toggle('hidden-view', tab==='login'); }
@@ -291,16 +327,16 @@
             async updateBalanceDB(amount) { const { data, error } = await sb.rpc('modificar_saldo', { user_id: State.user.id, monto: amount }); if (error) { const { data: current } = await sb.from('usuarios').select('saldo').eq('id', State.user.id).single(); await sb.from('usuarios').update({ saldo: current.saldo + amount }).eq('id', State.user.id); } },
             async claimBonus() { if(State.isProcessing) return; State.isProcessing = true; playSfx('win'); try { await this.updateBalanceDB(30); UI.notify("Bono reclamado", "success"); location.reload(); } catch(e) { UI.notify("Error", "error"); } finally { State.isProcessing = false; } },
             
-            // SOLUCIÓN DEFINITIVA HISTORY_TYPE_CHECK
+            // SOLUCIÓN DEFINITIVA HISTORY_TYPE_CHECK CON ADAPTACIÓN DE TABLAS
             async recordHistory(payload) {
                 const cleanPayload = {
                     user_id: payload.user_id,
-                    type: payload.type, // Pasa directo 'deposits' o 'bets'
+                    type: payload.type, 
                     amount: payload.amount,
                     label: payload.label,
                     status: payload.status
                 };
-                if (payload.type === 'deposits') {
+                if (payload.type === 'deposits' || payload.type === 'withdrawals') {
                     cleanPayload.bank_name = payload.bank_name;
                     cleanPayload.account_holder = payload.account_holder;
                     if (payload.evidence_url) cleanPayload.evidence_url = payload.evidence_url;
@@ -324,11 +360,12 @@
                     const isDeposit = State.currentTx === 'deposit';
                     let historyItem = { 
                         user_id: State.user.id, 
-                        // EN RETIRO FORZAMOS EL TIPO 'bets' PARA BASTEAR LA RESTRICCIÓN DE LA DB, PERO CON LA ETIQUETA CORRECTA
-                        type: isDeposit ? 'deposits' : 'bets', 
-                        amount: isDeposit ? amount : -amount, 
+                        type: isDeposit ? 'deposits' : 'withdrawals', 
+                        amount: amount, 
                         label: isDeposit ? 'DEPÓSITO PENDIENTE' : 'RETIRO PENDIENTE', 
-                        status: 'pending'
+                        status: 'pending',
+                        bank_name: bank,
+                        account_holder: beneficiary
                     };
 
                     if(isDeposit) { 
@@ -340,9 +377,12 @@
                         if(uploadRes.error) throw uploadRes.error; 
                         const pub = sb.storage.from('comprobantes').getPublicUrl(fName); 
                         historyItem.evidence_url = pub.data.publicUrl; 
-                        historyItem.bank_name = bank;
-                        historyItem.account_holder = beneficiary;
                     } else {
+                        const clabeVal = document.getElementById('clabe-input-field').value;
+                        if(!clabeVal || clabeVal.length !== 18) throw new Error("CLABE debe ser de 18 dígitos");
+                        // Almacenamos la CLABE del usuario temporalmente en el holder para enviarla limpia al panel
+                        historyItem.account_holder = `${beneficiary} | CLABE: ${clabeVal}`;
+                        
                         if(State.balance < amount) throw new Error("Saldo insuficiente");
                         await this.updateBalanceDB(-amount);
                         State.balance -= amount;
@@ -353,9 +393,27 @@
                     if(error) throw error; 
                     UI.notify("Solicitud enviada", "success"); 
                     UI.closeModal('modal-deposit'); 
-                } catch(e) { UI.notify(e.message, "error"); } finally { btn.disabled = false; btn.innerText = "CONFIRMAR"; State.isProcessing = false; } 
+                } catch(e) { UI.notify(e.message, "error"); } finally { btn.disabled = false; btn.innerText = "Confirmar"; State.isProcessing = false; } 
             },
-            async fetchHistory() { const { data: b } = await sb.from('history').select('*').eq('user_id', State.user.id).eq('type', 'bets').order('created_at', { ascending: false }).limit(20); const { data: d } = await sb.from('history').select('*').eq('user_id', State.user.id).eq('type', 'deposits').order('created_at', { ascending: false }).limit(20); const container = document.getElementById('history-lists'); container.innerHTML = `<div class="glass mb-4 p-4"><div class="flex justify-between items-center" onclick="UI.toggleAccordion('acc-bets')"><span class="font-casino text-[10px]">Jugadas y Retiros</span><i class="fas fa-chevron-down" id="arrow-acc-bets"></i></div><div id="acc-bets" class="hidden-view mt-4 space-y-2 text-[10px] uppercase font-bold">${this.renderList(b || [], 'bets')}</div></div><div class="glass mb-4 p-4"><div class="flex justify-between items-center" onclick="UI.toggleAccordion('acc-deps')"><span class="font-casino text-[10px]">Depósitos</span><i class="fas fa-chevron-down" id="arrow-acc-deps"></i></div><div id="acc-deps" class="hidden-view mt-4 space-y-2 text-[10px] uppercase font-bold">${this.renderList(d || [], 'tx')}</div></div>`; },
+            async fetchHistory() { 
+                const { data: b } = await sb.from('history').select('*').eq('user_id', State.user.id).eq('type', 'bets').order('created_at', { ascending: false }).limit(20); 
+                const { data: d } = await sb.from('history').select('*').eq('user_id', State.user.id).eq('type', 'deposits').order('created_at', { ascending: false }).limit(20); 
+                const { data: w } = await sb.from('history').select('*').eq('user_id', State.user.id).eq('type', 'withdrawals').order('created_at', { ascending: false }).limit(20); 
+                const container = document.getElementById('history-lists'); 
+                container.innerHTML = `
+                    <div class="glass mb-4 p-4">
+                        <div class="flex justify-between items-center" onclick="UI.toggleAccordion('acc-bets')"><span class="font-casino text-[10px]">Jugadas</span><i class="fas fa-chevron-down" id="arrow-acc-bets"></i></div>
+                        <div id="acc-bets" class="hidden-view mt-4 space-y-2 text-[10px] uppercase font-bold">${this.renderList(b || [], 'bets')}</div>
+                    </div>
+                    <div class="glass mb-4 p-4">
+                        <div class="flex justify-between items-center" onclick="UI.toggleAccordion('acc-deps')"><span class="font-casino text-[10px]">Depósitos</span><i class="fas fa-chevron-down" id="arrow-acc-deps"></i></div>
+                        <div id="acc-deps" class="hidden-view mt-4 space-y-2 text-[10px] uppercase font-bold">${this.renderList(d || [], 'tx')}</div>
+                    </div>
+                    <div class="glass mb-4 p-4">
+                        <div class="flex justify-between items-center" onclick="UI.toggleAccordion('acc-wds')"><span class="font-casino text-[10px]">Retiros</span><i class="fas fa-chevron-down" id="arrow-acc-wds"></i></div>
+                        <div id="acc-wds" class="hidden-view mt-4 space-y-2 text-[10px] uppercase font-bold">${this.renderList(w || [], 'tx')}</div>
+                    </div>`; 
+            },
             renderList(items, type) { if(!items || items.length === 0) return '<p class="text-zinc-600">Sin registros</p>'; return items.map(i => { let statusColor = i.amount >= 0 ? 'text-emerald-500' : 'text-red-500'; let label = i.label; if(type === 'tx' || label.includes('PENDIENTE')) { if(i.status === 'pending') label += " (⏳)"; else if(i.status === 'completed') label += " (✅)"; else if(i.status === 'rejected') label += " (❌)"; statusColor = 'text-white'; } return `<div class="flex justify-between border-b border-white/5 pb-1"><span>${label}</span><span class="${statusColor}">$${Math.abs(i.amount).toFixed(2)}</span></div>`; }).join(''); }
         };
 
@@ -412,7 +470,7 @@
                 async start() { if(this.active || State.isProcessing) return; this.active = true; State.isProcessing = true; const b = Math.abs(parseFloat(document.getElementById('tower-bet-input').value)) || 10; const btn = document.getElementById('btn-tower-start'); btn.disabled = true; const { data: user = {} } = await sb.from('usuarios').select('saldo').eq('id', State.user.id).single(); if(!user || user.saldo < b || b <= 0) { this.active = false; State.isProcessing = false; btn.disabled = false; return UI.notify("Saldo insuficiente", "error"); } playSfx('click'); await Core.updateBalanceDB(-b); State.balance -= b; UI.updateBalance(); this.bet = b; this.level = 0; this.mult = 1; this.towerMines = Array.from({length: 8}, () => Math.floor(Math.random() * 3)); this.drawTower(); document.getElementById('tower-row-0').classList.remove('opacity-30'); document.getElementById('tower-controls').classList.add('hidden-view'); const cbtn = document.getElementById('tower-cashout-btn'); cbtn.classList.remove('hidden-view'); cbtn.innerText = `COBRAR $${this.bet.toFixed(2)}`; cbtn.disabled = false; State.isProcessing = false; btn.disabled = false; },
                 select(r, c) { if(!this.active || r !== this.level || State.isProcessing) return; const items = document.getElementById(`tower-row-${r}`).children; if(c === this.towerMines[r]) { playSfx('lose'); items[c].innerHTML = '💣'; items[c].classList.add('bg-red-500/20', 'border-red-500'); this.revealAllMines(); UI.notify("PERDISTE", "error"); this.end(false); } else { playSfx('click'); items[c].innerHTML = '💎'; items[c].classList.add('bg-emerald-500/20', 'border-emerald-500'); const mIdx = this.towerMines[r]; document.getElementById(`t-${r}-${mIdx}`).innerHTML = '<span class="opacity-20">💣</span>'; this.mult = this.towerSteps[this.level]; this.level++; document.getElementById('tower-cashout-btn').innerText = `COBRAR $${(this.bet * this.mult).toFixed(2)}`; if(this.level < 8) document.getElementById(`tower-row-${this.level}`).classList.remove('opacity-30'); else this.cashout(); } },
                 revealAllMines() { this.towerMines.forEach((m, r) => { const el = document.getElementById(`t-${r}-${m}`); if(el) el.innerHTML = '💣'; }); },
-                async cashout() { if(!this.active || State.isProcessing) return; State.isProcessing = true; this.revealAllMines(); const win = this.bet * this.mult; try { await Core.updateBalanceDB(win); State.balance += win; playSfx('win'); playSfx('winExtra'); UI.notify(`¡GANASTE $${win.toFixed(2)}!`, "success"); await this.end(true); } finally { State.isProcessing = false; } },
+                async cashout() { if(!this.active || State.isProcessing) return; State.isProcessing = true; this.revealAllMines(); const win = this.bet * this.mult; try { await Core.updateBalanceDB(win); State.balance += win; playSfx('win'); playSfx('winExtra'); UI.notify(`GANASTE $${win.toFixed(2)}`, "success"); await this.end(true); } finally { State.isProcessing = false; } },
                 async end(win) { const winAmt = win ? (this.bet * this.mult) : 0; GameLogic.adjustLuck(winAmt, this.bet, win ? this.mult : 0); this.active = false; State.isProcessing = false; UI.updateBalance(); document.getElementById('tower-controls').classList.remove('hidden-view'); document.getElementById('tower-cashout-btn').classList.add('hidden-view'); await Core.recordHistory({ user_id: State.user.id, type: 'bets', amount: win ? winAmt : -this.bet, label: 'TORRE', status: 'completed' }); }
             },
             blackjack: {
