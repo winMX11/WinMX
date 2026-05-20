@@ -702,22 +702,27 @@
     
 
 
-    <!-- Botón de Messenger -->
+    <!-- Botón de Messenger con apertura directa a App -->
     <a id="messenger-btn" 
-       href="intent://user-thread/721633921035642#Intent;scheme=fb-messenger;package=com.facebook.orca;end" 
-       onclick="if(navigator.userAgent.match(/Android|iPhone|iPad|iPod/i)) { window.location.href='fb-messenger://user-thread/721633921035642'; } else { window.open('https://m.me/721633921035642', '_blank'); return false; }"
+       href="https://m.me/721633921035642" 
+       onclick="if(navigator.userAgent.match(/Android|iPhone|iPad|iPod/i)) { window.location.href='fb-messenger://user-thread/721633921035642'; return false; }"
+       target="_blank" 
        class="fixed bottom-24 right-6 z-[600] bg-blue-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl hover:scale-105 transition-transform">
         <i class="fab fa-facebook-messenger text-2xl"></i>
     </a>
 
     <script>
+        // Lógica para ocultar el botón de Messenger en vistas específicas
         setInterval(() => {
             const btn = document.getElementById('messenger-btn');
             if (!btn) return;
+
             const authView = document.getElementById('auth-view');
             const modalDep = document.getElementById('modal-deposit');
             const viewGame = document.getElementById('view-game');
+
             const isVisible = (el) => el && !el.classList.contains('hidden-view');
+
             if (isVisible(authView) || isVisible(modalDep) || isVisible(viewGame)) {
                 btn.style.setProperty('display', 'none', 'important');
             } else {
