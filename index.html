@@ -646,7 +646,7 @@
 
                 // 2. Cámara (Vista Isométrica)
                 const aspect = container.clientWidth / container.clientHeight;
-                const viewSize = 12; 
+                const viewSize = 8; 
                 this.camera = new THREE.OrthographicCamera(-viewSize/2, viewSize/2, viewSize/aspect/2, -viewSize/aspect/2, 0.1, 100);
                 this.camera.position.set(0, 8, 10);
                 this.camera.lookAt(0, 0, 0);
