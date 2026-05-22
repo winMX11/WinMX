@@ -757,6 +757,337 @@
                 this.chicken.rotation.y = Math.PI / 2; 
                 this.scene.add(this.chicken);
 
+                // ============= NYC CITY ELEMENTS =============
+                
+                // 1. RASCACIELOS ESTILO MANHATTAN - LADO IZQUIERDO
+                const manhattanColors = [0x2c3e50, 0x34495e, 0x3d5a73];
+                for (let i = 0; i < 3; i++) {
+                    const height = 7 + i * 1.8;
+                    const buildGeo = new THREE.BoxGeometry(1.6, height, 1.0);
+                    const buildMat = new THREE.MeshStandardMaterial({ 
+                        color: manhattanColors[i], 
+                        roughness: 0.6, 
+                        metalness: 0.1 
+                    });
+                    const building = new THREE.Mesh(buildGeo, buildMat);
+                    building.position.set(-7.2 - i * 1.5, height / 2, -9 + i * 4);
+                    building.castShadow = true;
+                    building.receiveShadow = true;
+                    this.scene.add(building);
+                    
+                    // Windows detalladas con luz
+                    const winGeo = new THREE.PlaneGeometry(0.18, 0.18);
+                    const winMat = new THREE.MeshStandardMaterial({ 
+                        color: 0xffff88, 
+                        emissive: 0xffff88, 
+                        emissiveIntensity: 0.8,
+                        roughness: 0.3
+                    });
+                    for (let wx = -0.6; wx <= 0.6; wx += 0.35) {
+                        for (let wy = 0.3; wy < height - 0.3; wy += 0.35) {
+                            const window = new THREE.Mesh(winGeo, winMat);
+                            window.position.set(building.position.x - 0.5, wy, building.position.z + 0.51);
+                            this.scene.add(window);
+                        }
+                    }
+                    
+                    // Corona del edificio (Rooftop)
+                    const roofGeo = new THREE.BoxGeometry(1.7, 0.3, 1.1);
+                    const roofMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.8 });
+                    const roof = new THREE.Mesh(roofGeo, roofMat);
+                    roof.position.set(building.position.x, height + 0.15, building.position.z);
+                    this.scene.add(roof);
+                    
+                    // Antenas en el techo
+                    const antennaGeo = new THREE.CylinderGeometry(0.04, 0.04, 1.2, 8);
+                    const antennaMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+                    const antenna = new THREE.Mesh(antennaGeo, antennaMat);
+                    antenna.position.set(building.position.x, height + 0.8, building.position.z);
+                    this.scene.add(antenna);
+                }
+
+                // 2. RASCACIELOS ESTILO TIMES SQUARE - LADO DERECHO
+                const timesSquareColors = [0xff4444, 0xff6633, 0xffaa00];
+                for (let i = 0; i < 3; i++) {
+                    const height = 6.5 + i * 2.0;
+                    const buildGeo = new THREE.BoxGeometry(1.8, height, 1.0);
+                    const buildMat = new THREE.MeshStandardMaterial({ 
+                        color: timesSquareColors[i], 
+                        roughness: 0.5,
+                        metalness: 0.2
+                    });
+                    const building = new THREE.Mesh(buildGeo, buildMat);
+                    building.position.set(5.5 + i * 1.6, height / 2, -9 + i * 4);
+                    building.castShadow = true;
+                    building.receiveShadow = true;
+                    this.scene.add(building);
+                    
+                    // Windows con colores vibrantes
+                    const winGeo = new THREE.PlaneGeometry(0.18, 0.18);
+                    const winMat = new THREE.MeshStandardMaterial({ 
+                        color: 0xffffff, 
+                        emissive: 0xffffff, 
+                        emissiveIntensity: 0.9,
+                        roughness: 0.2
+                    });
+                    for (let wx = -0.7; wx <= 0.7; wx += 0.35) {
+                        for (let wy = 0.3; wy < height - 0.3; wy += 0.35) {
+                            const window = new THREE.Mesh(winGeo, winMat);
+                            window.position.set(building.position.x + 0.5, wy, building.position.z + 0.51);
+                            this.scene.add(window);
+                        }
+                    }
+                    
+                    // Panneles LED grandes (Billboards)
+                    const ledGeo = new THREE.PlaneGeometry(1.6, 0.6);
+                    const ledMat = new THREE.MeshStandardMaterial({ 
+                        color: 0x00ff00, 
+                        emissive: 0x00ff00, 
+                        emissiveIntensity: 0.6,
+                        roughness: 0.1
+                    });
+                    const led = new THREE.Mesh(ledGeo, ledMat);
+                    led.position.set(building.position.x, height - 0.8, building.position.z + 0.51);
+                    this.scene.add(led);
+                }
+
+                // 3. TAXIS AMARILLOS DE NYC
+                for (let i = 0; i < 4; i++) {
+                    const taxiGeo = new THREE.BoxGeometry(0.55, 0.35, 1.1);
+                    const taxiMat = new THREE.MeshStandardMaterial({ 
+                        color: 0xffdd00, 
+                        roughness: 0.5,
+                        metalness: 0.3
+                    });
+                    const taxi = new THREE.Mesh(taxiGeo, taxiMat);
+                    taxi.position.set(-7.2 - i * 0.8, 0.175, 7.5 + i * 1.2);
+                    taxi.castShadow = true;
+                    taxi.receiveShadow = true;
+                    this.scene.add(taxi);
+                    
+                    // Windows del taxi
+                    const taxiWinGeo = new THREE.PlaneGeometry(0.25, 0.2);
+                    const taxiWinMat = new THREE.MeshStandardMaterial({ color: 0x4488ff });
+                    const taxiWin = new THREE.Mesh(taxiWinGeo, taxiWinMat);
+                    taxiWin.position.set(taxi.position.x, taxi.position.y + 0.15, taxi.position.z + 0.56);
+                    this.scene.add(taxiWin);
+                    
+                    // Ruedas del taxi
+                    const wheelGeo = new THREE.CylinderGeometry(0.16, 0.16, 0.12, 16);
+                    const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
+                    for (let w = -0.25; w <= 0.25; w += 0.5) {
+                        for (let wz = -0.4; wz <= 0.4; wz += 0.8) {
+                            const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+                            wheel.position.set(taxi.position.x + w, 0.16, taxi.position.z + wz);
+                            this.scene.add(wheel);
+                        }
+                    }
+                    
+                    // Luz de techo del taxi
+                    const roofLightGeo = new THREE.BoxGeometry(0.3, 0.12, 0.2);
+                    const roofLightMat = new THREE.MeshStandardMaterial({ color: 0xffff00, emissive: 0xffff00, emissiveIntensity: 0.6 });
+                    const roofLight = new THREE.Mesh(roofLightGeo, roofLightMat);
+                    roofLight.position.set(taxi.position.x, taxi.position.y + 0.25, taxi.position.z);
+                    this.scene.add(roofLight);
+                }
+
+                // 4. SEMÁFOROS (Traffic Lights) - Profesionales
+                for (let z = -12; z <= 12; z += 8) {
+                    // Poste
+                    const postGeo = new THREE.CylinderGeometry(0.09, 0.11, 3.5, 8);
+                    const postMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.8 });
+                    const post = new THREE.Mesh(postGeo, postMat);
+                    post.position.set(-6.5, 1.75, z);
+                    post.castShadow = true;
+                    this.scene.add(post);
+                    
+                    // Caja de semáforo
+                    const lightBoxGeo = new THREE.BoxGeometry(0.28, 0.75, 0.18);
+                    const lightBoxMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9 });
+                    const lightBox = new THREE.Mesh(lightBoxGeo, lightBoxMat);
+                    lightBox.position.set(-6.5, 2.9, z);
+                    lightBox.castShadow = true;
+                    this.scene.add(lightBox);
+                    
+                    // Luz roja (arriba)
+                    const redGeo = new THREE.SphereGeometry(0.075, 12, 12);
+                    const redMat = new THREE.MeshStandardMaterial({ 
+                        color: 0xff0000, 
+                        emissive: 0xff0000, 
+                        emissiveIntensity: 1.0 
+                    });
+                    const redLight = new THREE.Mesh(redGeo, redMat);
+                    redLight.position.set(-6.5, 3.25, z - 0.09);
+                    this.scene.add(redLight);
+                    const redPointLight = new THREE.PointLight(0xff0000, 1.5, 12);
+                    redPointLight.position.copy(redLight.position);
+                    this.scene.add(redPointLight);
+                    
+                    // Luz amarilla (medio)
+                    const yellowGeo = new THREE.SphereGeometry(0.065, 12, 12);
+                    const yellowMat = new THREE.MeshStandardMaterial({ 
+                        color: 0xffaa00, 
+                        emissive: 0xffaa00, 
+                        emissiveIntensity: 0.6 
+                    });
+                    const yellowLight = new THREE.Mesh(yellowGeo, yellowMat);
+                    yellowLight.position.set(-6.5, 2.9, z - 0.09);
+                    this.scene.add(yellowLight);
+                    
+                    // Luz verde (abajo)
+                    const greenGeo = new THREE.SphereGeometry(0.075, 12, 12);
+                    const greenMat = new THREE.MeshStandardMaterial({ 
+                        color: 0x00ff00, 
+                        emissive: 0x00ff00, 
+                        emissiveIntensity: 0.7 
+                    });
+                    const greenLight = new THREE.Mesh(greenGeo, greenMat);
+                    greenLight.position.set(-6.5, 2.55, z - 0.09);
+                    this.scene.add(greenLight);
+                }
+
+                // 5. HIDRANTES DE FUEGO (Fire Hydrants) - NYC Red
+                for (let z = -10; z <= 10; z += 7) {
+                    const hydrantGeo = new THREE.CylinderGeometry(0.08, 0.1, 0.6, 8);
+                    const hydrantMat = new THREE.MeshStandardMaterial({ color: 0xff0000, roughness: 0.6 });
+                    const hydrant = new THREE.Mesh(hydrantGeo, hydrantMat);
+                    hydrant.position.set(5.8, 0.3, z);
+                    hydrant.castShadow = true;
+                    this.scene.add(hydrant);
+                    
+                    // Parte superior del hidrante
+                    const capGeo = new THREE.SphereGeometry(0.12, 8, 8);
+                    const capMat = new THREE.MeshStandardMaterial({ color: 0xcc0000, roughness: 0.5 });
+                    const cap = new THREE.Mesh(capGeo, capMat);
+                    cap.position.set(5.8, 0.65, z);
+                    this.scene.add(cap);
+                }
+
+                // 6. ÁRBOLES EN MACETAS
+                for (let z = -11; z <= 11; z += 7) {
+                    // Maceta
+                    const potGeo = new THREE.CylinderGeometry(0.3, 0.35, 0.45, 8);
+                    const potMat = new THREE.MeshStandardMaterial({ color: 0x8b6f47, roughness: 0.9 });
+                    const pot = new THREE.Mesh(potGeo, potMat);
+                    pot.position.set(5.8, 0.225, z);
+                    pot.castShadow = true;
+                    this.scene.add(pot);
+                    
+                    // Tronco
+                    const trunkGeo = new THREE.CylinderGeometry(0.12, 0.14, 1.8, 8);
+                    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x704214, roughness: 0.95 });
+                    const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+                    trunk.position.set(5.8, 1.1, z);
+                    trunk.castShadow = true;
+                    this.scene.add(trunk);
+                    
+                    // Follaje - esfera grande
+                    const foliageGeo = new THREE.SphereGeometry(0.75, 10, 10);
+                    const foliageMat = new THREE.MeshStandardMaterial({ color: 0x228822, roughness: 0.8 });
+                    const foliage = new THREE.Mesh(foliageGeo, foliageMat);
+                    foliage.position.set(5.8, 2.3, z);
+                    foliage.castShadow = true;
+                    this.scene.add(foliage);
+                }
+
+                // 7. BANCOS DE PARQUE
+                for (let z = -9; z <= 9; z += 9) {
+                    // Estructura de banco
+                    const benchGeo = new THREE.BoxGeometry(1.2, 0.4, 0.45);
+                    const benchMat = new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.85 });
+                    const bench = new THREE.Mesh(benchGeo, benchMat);
+                    bench.position.set(5.5, 0.2, z);
+                    bench.castShadow = true;
+                    this.scene.add(bench);
+                    
+                    // Patas del banco
+                    const legGeo = new THREE.BoxGeometry(0.1, 0.3, 0.1);
+                    for (let leg of [[-0.5, -0.15], [0.5, -0.15], [-0.5, 0.15], [0.5, 0.15]]) {
+                        const legMesh = new THREE.Mesh(legGeo, benchMat);
+                        legMesh.position.set(bench.position.x + leg[0], 0.15, bench.position.z + leg[1]);
+                        this.scene.add(legMesh);
+                    }
+                }
+
+                // 8. POSTES DE "NO PARKING" 
+                for (let z = -12; z <= 12; z += 8) {
+                    const signPostGeo = new THREE.CylinderGeometry(0.06, 0.07, 2.0, 8);
+                    const signPostMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
+                    const signPost = new THREE.Mesh(signPostGeo, signPostMat);
+                    signPost.position.set(-7.5, 1.0, z);
+                    signPost.castShadow = true;
+                    this.scene.add(signPost);
+                    
+                    // Señal roja redonda
+                    const signGeo = new THREE.CircleGeometry(0.28, 12);
+                    const signMat = new THREE.MeshStandardMaterial({ color: 0xff0000, roughness: 0.6 });
+                    const sign = new THREE.Mesh(signGeo, signMat);
+                    sign.position.set(-7.5, 2.1, z + 0.065);
+                    sign.rotation.y = Math.PI * 0.01;
+                    this.scene.add(sign);
+                    
+                    // Línea blanca en la X
+                    const lineGeo = new THREE.BoxGeometry(0.04, 0.32, 0.02);
+                    const lineMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+                    const line1 = new THREE.Mesh(lineGeo, lineMat);
+                    line1.position.set(-7.5, 2.1, z + 0.066);
+                    line1.rotation.z = Math.PI / 4;
+                    this.scene.add(line1);
+                    const line2 = new THREE.Mesh(lineGeo, lineMat);
+                    line2.position.set(-7.5, 2.1, z + 0.066);
+                    line2.rotation.z = -Math.PI / 4;
+                    this.scene.add(line2);
+                }
+
+                // 9. FAROLAS LED ESTILO NYC
+                for (let z = -14; z <= 14; z += 5.5) {
+                    // Poste
+                    const streetPostGeo = new THREE.CylinderGeometry(0.095, 0.12, 4.0, 8);
+                    const streetPostMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.85 });
+                    const streetPost = new THREE.Mesh(streetPostGeo, streetPostMat);
+                    streetPost.position.set(-8.5, 2.0, z);
+                    streetPost.castShadow = true;
+                    this.scene.add(streetPost);
+                    
+                    // Cabezal de lámpara
+                    const lampHeadGeo = new THREE.BoxGeometry(0.5, 0.32, 0.4);
+                    const lampHeadMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8 });
+                    const lampHead = new THREE.Mesh(lampHeadGeo, lampHeadMat);
+                    lampHead.position.set(-8.5, 4.1, z);
+                    this.scene.add(lampHead);
+                    
+                    // Luz LED blanca potente
+                    const ledLampGeo = new THREE.PlaneGeometry(0.45, 0.28);
+                    const ledLampMat = new THREE.MeshStandardMaterial({ 
+                        color: 0xffffff, 
+                        emissive: 0xffffff, 
+                        emissiveIntensity: 0.7,
+                        roughness: 0.2
+                    });
+                    const ledLamp = new THREE.Mesh(ledLampGeo, ledLampMat);
+                    ledLamp.position.set(-8.5, 4.1, z - 0.21);
+                    this.scene.add(ledLamp);
+                    
+                    const streetLight = new THREE.PointLight(0xffffff, 1.8, 15);
+                    streetLight.position.set(-8.5, 4.1, z);
+                    this.scene.add(streetLight);
+                }
+
+                // 10. BOCAS DE METRO (Subway Entrance)
+                const metroGeo = new THREE.BoxGeometry(1.2, 0.4, 0.8);
+                const metroMat = new THREE.MeshStandardMaterial({ color: 0xff0000, roughness: 0.7 });
+                const metro = new THREE.Mesh(metroGeo, metroMat);
+                metro.position.set(-4.0, 0.2, 11);
+                metro.castShadow = true;
+                this.scene.add(metro);
+                
+                // Letra M en blanco
+                const mGeo = new THREE.PlaneGeometry(0.3, 0.25);
+                const mMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.5 });
+                const mLetter = new THREE.Mesh(mGeo, mMat);
+                mLetter.position.set(-4.0, 0.25, 0.405);
+                this.scene.add(mLetter);
+
                 this.animate();
             },
             
