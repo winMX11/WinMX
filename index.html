@@ -180,6 +180,8 @@
                 <div onclick="Router.openGame('tower')" class="glass p-6 text-center active:scale-95 transition-transform cursor-pointer"><span class="text-4xl block mb-2">🗼</span><span class="font-casino text-[9px] text-zinc-500 tracking-widest">Torre</span></div>
                 <div onclick="Router.openGame('blackjack')" class="glass p-6 text-center active:scale-95 transition-transform cursor-pointer"><span class="text-4xl block mb-2">🃏</span><span class="font-casino text-[9px] text-zinc-500 tracking-widest">Blackjack</span></div>
                 <div onclick="Router.openGame('chicken')" class="glass p-6 text-center active:scale-95 transition-transform cursor-pointer"><span class="text-4xl block mb-2">🐥</span><span class="font-casino text-[9px] text-zinc-500 tracking-widest">Chicken Road</span></div>
+                <div onclick="Router.openGame('plinko')" class="glass p-6 text-center active:scale-95 transition-transform cursor-pointer"><span class="text-4xl block mb-2">⚪</span><span class="font-casino text-[9px] text-zinc-500 tracking-widest">Plinko</span></div>
+                <div onclick="Router.openGame('coinflip')" class="glass p-6 text-center active:scale-95 transition-transform cursor-pointer"><span class="text-4xl block mb-2">🪙</span><span class="font-casino text-[9px] text-zinc-500 tracking-widest">Coinflip</span></div>
             </div>
         </div>
 
@@ -595,7 +597,7 @@
                 if(viewId === 'history') Core.fetchHistory(); 
                 if(viewId === 'profile') UI.updateProfile(); 
             },
-            openGame(game) { if(State.isProcessing) return; playSfx('click'); this.showView('game'); document.getElementById('game-mount').innerHTML = this.templates[game]; document.getElementById('view-game').scrollTop = 0; document.getElementById('bottom-nav-bar').style.transform = 'translateY(100%)'; if(game === 'slots') GameLogic.slots.init(); if(game === 'mines') GameLogic.mines.drawGrid(); if(game === 'tower') GameLogic.tower.drawTower(); if(game === 'blackjack') GameLogic.blackjack.renderInitial(); if(game === 'chicken') GameLogic.chicken.init(); },
+            openGame(game) { if(State.isProcessing) return; playSfx('click'); this.showView('game'); document.getElementById('game-mount').innerHTML = this.templates[game]; document.getElementById('view-game').scrollTop = 0; document.getElementById('bottom-nav-bar').style.transform = 'translateY(100%)'; if(game === 'slots') GameLogic.slots.init(); if(game === 'mines') GameLogic.mines.drawGrid(); if(game === 'tower') GameLogic.tower.drawTower(); if(game === 'blackjack') GameLogic.blackjack.renderInitial(); if(game === 'chicken') GameLogic.chicken.init(); if(game === 'plinko') GameLogic.plinko.init(); if(game === 'coinflip') GameLogic.coinflip.init(); },
             templates: {
                 slots: `<div class="glass p-6 text-center animate__animated animate__fadeIn"><div class="grid grid-cols-3 gap-2 mb-8"><div class="slot-box"><div id="reel-1" class="slot-reel"></div></div><div class="slot-box"><div id="reel-2" class="slot-reel"></div></div><div class="slot-box"><div id="reel-3" class="slot-reel"></div></div></div><div class="flex justify-between text-[9px] font-black uppercase mb-1 px-2 tracking-wider"><span class="text-emerald-500">Mín: 3.00x</span><span class="text-amber-500">Máx: 500.00x</span></div><input id="slots-bet-input" type="number" value="3" min="3" class="input-bet"><button id="btn-slots-play" onclick="GameLogic.slots.play()" class="btn-action w-full py-5 font-casino text-xl">GIRAR</button><div class="instruction-card"><h4>🎰 Reglas Slots</h4><p>Combina 3 símbolos para ganar. <div class="grid grid-cols-2 gap-2 text-[10px] font-bold uppercase mt-2"><div>🍒 x3</div><div>🍋 x10</div><div>🔔 x50</div><div class="text-emerald-500">7️⃣ x500</div></p>`,
                 mines: `<div class="glass p-4 text-center mx-auto max-w-[300px]"><div class="risk-badge"><i class="fas fa-bomb"></i> 3 Minas Activas</div><div id="mines-grid" class="grid grid-cols-5 gap-1.5 mb-4"></div><div id="mines-status" class="hidden-view flex justify-between p-3 bg-emerald-500/10 rounded-xl mb-3"><div class="flex flex-col items-start"><span id="mines-mult" class="font-casino text-emerald-500 text-xs">1.00x</span><span id="mines-next-hint" class="text-[7px] text-zinc-500 font-bold uppercase">Siguiente: --</span></div><button id="mines-cashout-btn" onclick="GameLogic.mines.cashout()" class="bg-emerald-500 text-black px-4 py-1 rounded font-bold text-[9px]">COBRAR $0.00</button></div><div id="mines-controls"><div class="flex justify-between text-[9px] font-black uppercase mb-1 px-2 tracking-wider"><span class="text-emerald-500">Mín: 1.25x</span><span class="text-amber-500">Máx: 500.00x</span></div><input id="mines-bet-input" type="number" value="3" min="3" class="input-bet"><button id="btn-mines-start" onclick="GameLogic.mines.start()" class="btn-action w-full py-4 font-casino">APOSTAR</button></div><div class="instruction-card"><h4>💣 Reglas Minas</h4><p>Encuentra diamantes y evita las minas.</p></div></div>`,
@@ -614,7 +616,9 @@
                     <div id="chicken-controls"><div class="flex justify-between text-[9px] font-black uppercase mb-1 px-2 tracking-wider"><span class="text-emerald-500">Mín: 1.20x</span><span class="text-amber-500">Máx: 100.00x</span></div><input id="chicken-bet-input" type="number" value="3" min="3" class="input-bet"><button onclick="GameLogic.chicken.start()" class="btn-action w-full py-4 font-casino">APOSTAR</button></div>
                     <div id="chicken-actions" class="hidden-view grid grid-cols-2 gap-3 mt-4"><button onclick="GameLogic.chicken.move()" class="btn-action py-5 bg-emerald-500 text-black font-black text-lg">AVANZAR</button><button id="chicken-cashout-btn" onclick="GameLogic.chicken.cashout()" class="btn-action py-5 bg-zinc-800 text-white font-black">COBRAR $0.00</button></div>
                     <div class="instruction-card"><h4>🐥 Reglas Chicken Road</h4><p>Cruza los carriles sin ser atropellado.</p></div>
-                </div>`
+                </div>`,
+                plinko: `<div class="glass p-4 mx-auto max-w-[320px] text-center"><div class="risk-badge" style="color: #60a5fa; background: rgba(96,165,250,0.1)"><i class="fas fa-circle"></i> Bola Cayendo</div><div id="plinko-board" style="width: 100%; height: 300px; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border-radius: 1rem; border: 1px solid rgba(96,165,250,0.2); position: relative; overflow: hidden; margin-bottom: 20px;"><canvas id="plinko-canvas" width="280" height="300" style="display: block; width: 100%;"></canvas></div><div id="plinko-result" class="hidden-view text-2xl font-casino mb-4">0.00x</div><div class="flex justify-between text-[9px] font-black uppercase mb-1 px-2 tracking-wider"><span class="text-emerald-500">Mín: 0.50x</span><span class="text-amber-500">Máx: 20.00x</span></div><input id="plinko-bet-input" type="number" value="5" min="1" class="input-bet"><button id="btn-plinko-drop" onclick="GameLogic.plinko.drop()" class="btn-action w-full py-4 font-casino">SOLTAR BOLA</button><div class="instruction-card"><h4>⚪ Reglas Plinko</h4><p>Deja caer la bola y gana según dónde caiga.</p></div></div>`,
+                coinflip: `<div class="glass p-4 mx-auto max-w-[320px] text-center"><div class="risk-badge" style="color: #fbbf24; background: rgba(251,191,36,0.1)"><i class="fas fa-coins"></i> 50/50</div><div id="coinflip-container" style="height: 160px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px;"><div id="coinflip-coin" style="font-size: 5rem; transition: all 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55); transform-style: preserve-3d;">🪙</div></div><div id="coinflip-result" class="hidden-view text-center mb-4"><span id="coinflip-outcome" class="text-xl font-casino text-emerald-500">CARA</span></div><div class="flex justify-between text-[9px] font-black uppercase mb-1 px-2 tracking-wider"><span class="text-emerald-500">Mín: 1.50x</span><span class="text-amber-500">Máx: 2.00x</span></div><div class="flex gap-2 mb-3"><select id="coinflip-choice" class="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg p-2 text-white text-[10px] font-bold"><option value="heads">CARA</option><option value="tails">CRUZ</option></select></div><input id="coinflip-bet-input" type="number" value="5" min="1" class="input-bet"><button id="btn-coinflip-flip" onclick="GameLogic.coinflip.flip()" class="btn-action w-full py-4 font-casino">LANZAR MONEDA</button><div class="instruction-card"><h4>🪙 Reglas Coinflip</h4><p>Elige Cara o Cruz y gana 2x si aciertas.</p></div></div>`
             }
         };
 
@@ -818,6 +822,125 @@
                 async cashout() { if(!this.active || State.isProcessing) return; State.isProcessing = true; const btn = document.getElementById('btn-crash'); if(btn) btn.disabled = true; clearInterval(this.interval); const win = this.bet * this.mult; try { await Core.updateBalanceDB(win); State.balance += win; playSfx('win'); playSfx('winExtra'); UI.notify(`GANASTE $${win.toFixed(2)}`, "success"); await this.end(true); } catch(e) { State.isProcessing = false; } },
                 explode() { clearInterval(this.interval); playSfx('lose'); UI.notify("¡EXPLOTÓ!", "error"); const multEl = document.getElementById('crash-mult'); if(multEl) multEl.classList.add('text-red-500'); const rocketEl = document.getElementById('crash-rocket'); if(rocketEl) { rocketEl.innerHTML = '💥'; rocketEl.style.transform = 'translateY(0)'; } this.end(false); },
                 async end(win) { const winAmt = win ? (this.bet * this.mult) : 0; GameLogic.adjustLuck(winAmt, this.bet, win ? this.mult : 0); this.active = false; State.isProcessing = false; UI.updateBalance(); const btn = document.getElementById('btn-crash'); if(btn) { btn.innerText = "EXPLOTÓ"; btn.disabled = true; setTimeout(() => { btn.disabled = false; btn.innerText = "DESPEGAR"; btn.onclick = () => GameLogic.crash.start(); const multEl = document.getElementById('crash-mult'); if(multEl) { multEl.classList.remove('text-red-500'); multEl.innerText = '1.00x'; } const rocketEl = document.getElementById('crash-rocket'); if(rocketEl) { rocketEl.innerHTML = '🚀'; rocketEl.style.transform = 'translateY(0)'; } }, 2500); } await Core.recordHistory({ user_id: State.user.id, type: 'bets', amount: win ? winAmt : -this.bet, label: 'AVIATOR', status: 'completed' }); }
+            },
+            plinko: {
+                active: false, bet: 0, dropping: false, mult: 1,
+                multipliers: [0.5, 1, 1.5, 2, 3, 5, 8, 12, 20, 12, 8, 5, 3, 2, 1.5, 1, 0.5],
+                init() { this.drawBoard(); },
+                drawBoard() {
+                    const canvas = document.getElementById('plinko-canvas');
+                    if(!canvas) return;
+                    const ctx = canvas.getContext('2d');
+                    ctx.fillStyle = 'rgba(30, 41, 59, 0.3)';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    const pegRadius = 4; const pegSpacing = 20;
+                    for(let row = 0; row < 10; row++) {
+                        for(let col = 0; col < row + 1; col++) {
+                            const x = (canvas.width / 2) - (row * pegSpacing / 2) + (col * pegSpacing);
+                            const y = 20 + (row * pegSpacing);
+                            ctx.fillStyle = 'rgba(96, 165, 250, 0.5)';
+                            ctx.beginPath();
+                            ctx.arc(x, y, pegRadius, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                    }
+                },
+                async drop() {
+                    if(this.active || State.isProcessing) return;
+                    this.active = true;
+                    State.isProcessing = true;
+                    const b = Math.abs(parseFloat(document.getElementById('plinko-bet-input').value)) || 5;
+                    const btn = document.getElementById('btn-plinko-drop');
+                    if(btn) btn.disabled = true;
+                    if(b < 1) { this.active = false; State.isProcessing = false; if(btn) btn.disabled = false; return UI.notify("Apuesta mínima $1 MXN", "error"); }
+                    const { data: user = {} } = await sb.from('usuarios').select('saldo').eq('id', State.user.id).single();
+                    if(!user || user.saldo < b) { this.active = false; State.isProcessing = false; if(btn) btn.disabled = false; return UI.notify("Saldo insuficiente", "error"); }
+                    playSfx('click');
+                    await Core.updateBalanceDB(-b);
+                    State.balance -= b;
+                    UI.updateBalance();
+                    this.bet = b;
+                    const resultIdx = Math.floor(Math.random() * this.multipliers.length);
+                    this.mult = this.multipliers[resultIdx];
+                    const failChance = (resultIdx > 6 || resultIdx < 6) ? (0.15 * GlobalLuck.luckFactor) : 0;
+                    if(Math.random() < failChance) { this.mult = this.multipliers[Math.max(0, resultIdx - 2)]; }
+                    setTimeout(() => {
+                        const resultEl = document.getElementById('plinko-result');
+                        if(resultEl) { resultEl.classList.remove('hidden-view'); resultEl.innerText = this.mult.toFixed(2) + 'x'; }
+                        const win = this.bet * this.mult;
+                        if(this.mult > 1) {
+                            playSfx('win');
+                            playSfx('winExtra');
+                            UI.notify(`¡GANASTE $${win.toFixed(2)}!`, "success");
+                        } else {
+                            playSfx('lose');
+                            UI.notify("SIN SUERTE", "error");
+                        }
+                        GameLogic.adjustLuck(win - this.bet, this.bet, this.mult);
+                        setTimeout(async () => {
+                            if(this.mult > 1) { await Core.updateBalanceDB(win); State.balance += win; }
+                            UI.updateBalance();
+                            this.active = false;
+                            State.isProcessing = false;
+                            if(btn) btn.disabled = false;
+                            const resultEl2 = document.getElementById('plinko-result');
+                            if(resultEl2) resultEl2.classList.add('hidden-view');
+                            await Core.recordHistory({ user_id: State.user.id, type: 'bets', amount: win - this.bet, label: 'PLINKO', status: 'completed' });
+                        }, 2000);
+                    }, 2000);
+                }
+            },
+            coinflip: {
+                active: false, bet: 0, flipping: false, result: null, mult: 2,
+                init() {},
+                async flip() {
+                    if(this.active || State.isProcessing) return;
+                    this.active = true;
+                    State.isProcessing = true;
+                    const b = Math.abs(parseFloat(document.getElementById('coinflip-bet-input').value)) || 5;
+                    const choice = document.getElementById('coinflip-choice')?.value || 'heads';
+                    const btn = document.getElementById('btn-coinflip-flip');
+                    if(btn) btn.disabled = true;
+                    if(b < 1) { this.active = false; State.isProcessing = false; if(btn) btn.disabled = false; return UI.notify("Apuesta mínima $1 MXN", "error"); }
+                    const { data: user = {} } = await sb.from('usuarios').select('saldo').eq('id', State.user.id).single();
+                    if(!user || user.saldo < b) { this.active = false; State.isProcessing = false; if(btn) btn.disabled = false; return UI.notify("Saldo insuficiente", "error"); }
+                    playSfx('click');
+                    await Core.updateBalanceDB(-b);
+                    State.balance -= b;
+                    UI.updateBalance();
+                    this.bet = b;
+                    const coin = document.getElementById('coinflip-coin');
+                    const resultDiv = document.getElementById('coinflip-result');
+                    if(coin) { coin.style.transform = 'rotateY(0deg) rotateZ(720deg)'; }
+                    const luckyFail = (0.25 / GlobalLuck.luckFactor) > Math.random();
+                    const flip = luckyFail ? (choice === 'heads' ? 'tails' : 'heads') : (Math.random() > 0.5 ? 'heads' : 'tails');
+                    const isWin = (flip === choice);
+                    setTimeout(() => {
+                        if(coin) { coin.style.transform = flip === 'heads' ? 'rotateY(0deg)' : 'rotateY(180deg)'; }
+                        if(resultDiv) { resultDiv.classList.remove('hidden-view'); }
+                        const outcome = document.getElementById('coinflip-outcome');
+                        if(outcome) { outcome.innerText = flip === 'heads' ? 'CARA ✓' : 'CRUZ ✓'; outcome.className = `text-xl font-casino ${isWin ? 'text-emerald-500' : 'text-red-500'}`; }
+                        const win = isWin ? (this.bet * this.mult) : 0;
+                        if(isWin) {
+                            playSfx('win');
+                            playSfx('winExtra');
+                            UI.notify(`¡GANASTE $${win.toFixed(2)}!`, "success");
+                        } else {
+                            playSfx('lose');
+                            UI.notify("FALLASTE", "error");
+                        }
+                        GameLogic.adjustLuck(win - this.bet, this.bet, isWin ? this.mult : 0);
+                        setTimeout(async () => {
+                            if(isWin) { await Core.updateBalanceDB(win); State.balance += win; }
+                            UI.updateBalance();
+                            this.active = false;
+                            State.isProcessing = false;
+                            if(btn) btn.disabled = false;
+                            if(resultDiv) resultDiv.classList.add('hidden-view');
+                            await Core.recordHistory({ user_id: State.user.id, type: 'bets', amount: win - this.bet, label: 'COINFLIP', status: 'completed' });
+                        }, 2000);
+                    }, 1000);
+                }
             }
         };
 
@@ -832,6 +955,8 @@
                 pendingWin = GameLogic.chicken.bet * m;
             }
             else if (GameLogic.crash?.active) { pendingWin = GameLogic.crash.bet * GameLogic.crash.mult; }
+            else if (GameLogic.plinko?.active) { pendingWin = GameLogic.plinko.bet * GameLogic.plinko.mult; }
+            else if (GameLogic.coinflip?.active) { pendingWin = GameLogic.coinflip.bet * GameLogic.coinflip.mult; }
 
             if (pendingWin > 0) {
                 let saved = JSON.parse(localStorage.getItem('pendingWins') || '[]');
