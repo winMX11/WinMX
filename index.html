@@ -221,7 +221,7 @@
                 
                 <input id="dep-amount" type="number" placeholder="$0" class="w-full bg-transparent text-center text-5xl font-casino outline-none mb-6 text-white">
                 <div class="space-y-3 mb-6">
-                    <input id="clabe-input-field" type="number" placeholder="Tu cuenta Clabe de banco (18 digitos)" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none text-white text-[10px] font-bold uppercase hidden-view">
+                    <input id="clabe-input-field" type="number" placeholder="Tu cuenta Clabe de banco (18 digitos)" oninput="if(this.value.length > 18) this.value = this.value.slice(0, 18);" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none text-white text-[10px] font-bold uppercase hidden-view">
                     <input id="bank-name" type="text" placeholder="Nombre del banco remitente" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none text-white text-[10px] font-bold uppercase">
                     <input id="beneficiary-name" type="text" placeholder="Nombre completo del remitente" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none text-white text-[10px] font-bold uppercase">
                 </div>
@@ -370,6 +370,9 @@
                 if(State.currentTx === 'withdrawal') {
                     if(amt < 100) return this.notify("El retiro mínimo es de $100 MXN", "error");
                     if(amt > 3000) return this.notify("El retiro máximo es de $3000 MXN", "error");
+                    
+                    // --- NUEVA VALIDACIÓN: COMPROBAR SALDO SUFICIENTE PARA EL RETIRO ---
+                    if(amt > State.balance) return this.notify("Saldo insuficiente para este retiro", "error");
                 }
 
                 if(!bank) return this.notify("El nombre del banco es obligatorio", "error");
@@ -397,6 +400,7 @@
                     }
                 }
                 
+                // Si pasa todas las validaciones, lo deja avanzar al Paso 2
                 document.getElementById('dep-step-1').classList.add('hidden-view'); 
                 document.getElementById('dep-step-2').classList.remove('hidden-view'); 
             },
