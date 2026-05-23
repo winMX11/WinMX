@@ -230,10 +230,15 @@
             <div id="dep-step-2" class="hidden-view space-y-4 text-center">
                 <div id="deposit-info">
                     <div class="instruction-card !mt-0 !mb-4 bg-emerald-500/5 border-emerald-500/20 text-center">
-                        <p id="display-tx-header" class="text-zinc-500 text-[10px] uppercase mb-1">Confirmar depósito de:</p>
-                        <span class="text-emerald-500 font-black text-2xl" id="display-dep-amount">$0.00</span>
-                        <div id="display-withdrawal-clabe-box" class="text-zinc-400 text-[10px] font-mono mt-1 font-bold tracking-tight hidden-view"></div>
-                    </div>
+                    <p id="display-tx-header" class="text-zinc-500 text-[10px] uppercase mb-1">Confirmar depósito de:</p>
+                    <span class="text-emerald-500 font-black text-2xl" id="display-dep-amount">$0.00</span>
+    
+                    <div id="display-withdrawal-clabe-box" class="text-zinc-400 text-[10px] font-mono mt-1 font-bold tracking-tight hidden-view"></div>
+    
+                    <p id="display-withdrawal-time-hint" class="text-[9px] text-zinc-500 font-bold uppercase tracking-wider mt-2 hidden-view">
+                     * El retiro puede tardar de 5 minutos a 24 hrs en reflejarse en su cuenta de Banco *
+                     </p>
+                </div>
                     <div id="clabe-section" class="bg-emerald-500/10 p-4 rounded-xl border border-emerald-500/20 mb-4">
                         <p class="text-[8px] font-bold text-emerald-500 mb-1 uppercase">CLABE (STP)</p>
                         <div class="flex items-center justify-center gap-3"><span class="text-xs font-mono font-bold" id="clabe-number">722969020533491161</span><button onclick="UI.copyClabe()" class="text-emerald-500"><i class="fas fa-copy"></i></button></div>
@@ -370,8 +375,6 @@
                 if(State.currentTx === 'withdrawal') {
                     if(amt < 100) return this.notify("El retiro mínimo es de $100 MXN", "error");
                     if(amt > 3000) return this.notify("El retiro máximo es de $3000 MXN", "error");
-                    
-                    // --- NUEVA VALIDACIÓN: COMPROBAR SALDO SUFICIENTE PARA EL RETIRO ---
                     if(amt > State.balance) return this.notify("Saldo insuficiente para este retiro", "error");
                 }
 
@@ -389,18 +392,22 @@
                 const header = document.getElementById('display-tx-header');
                 const clabeBox = document.getElementById('display-withdrawal-clabe-box');
                 
+                // OBTENER EL ELEMENTO DE LA ACLARACIÓN
+                const timeHint = document.getElementById('display-withdrawal-time-hint');
+                
                 if(State.currentTx === 'deposit') {
                     if(header) header.innerText = "Confirmar depósito de:";
                     if(clabeBox) clabeBox.classList.add('hidden-view');
+                    if(timeHint) timeHint.classList.add('hidden-view'); // Ocultar en depósitos
                 } else {
                     if(header) header.innerText = "Confirmar retiro de:";
                     if(clabeBox) {
                         clabeBox.innerText = `A la cuenta: ${clabeVal}`;
                         clabeBox.classList.remove('hidden-view');
                     }
+                    if(timeHint) timeHint.classList.remove('hidden-view'); // Mostrar solo en retiros
                 }
                 
-                // Si pasa todas las validaciones, lo deja avanzar al Paso 2
                 document.getElementById('dep-step-1').classList.add('hidden-view'); 
                 document.getElementById('dep-step-2').classList.remove('hidden-view'); 
             },
