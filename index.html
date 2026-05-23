@@ -799,6 +799,10 @@
                         result = [s1, s2, s3]; 
                     } 
                     
+                    // Calcular duración del giro: rápido en modo auto, normal en modo manual
+                    const spinDuration = this.isAutoMode ? 1.75 : 3.5;
+                    const spinDurationMs = this.isAutoMode ? 1750 : 3500;
+                    
                     [1,2,3].forEach((id, i) => { 
                         const reel = document.getElementById(`reel-${id}`); 
                         if(reel) { 
@@ -808,7 +812,7 @@
                             reel.style.transition = 'none'; 
                             reel.style.transform = 'translateY(0)'; 
                             setTimeout(() => { 
-                                reel.style.transition = 'transform 3.5s cubic-bezier(0.15, 0, 0.05, 1)'; 
+                                reel.style.transition = `transform ${spinDuration}s cubic-bezier(0.15, 0, 0.05, 1)`; 
                                 reel.style.transform = `translateY(-${scrollDist}px)`; 
                             }, 50); 
                         } 
@@ -858,7 +862,7 @@
                         } else {
                             document.getElementById('slots-bet-input').disabled = false;
                         }
-                    }, 3600); 
+                    }, spinDurationMs); 
                 }
             },
             mines: {
