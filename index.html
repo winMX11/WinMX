@@ -426,15 +426,14 @@
                 const nameInput = document.getElementById('beneficiary-name');
                 
                 if (isDep) {
-                    // Textos cuando está en la pestaña DEPOSITAR
                     if (bankInput) bankInput.placeholder = "Nombre del banco remitente";
                     if (nameInput) nameInput.placeholder = "Nombre completo del remitente";
                 } else {
-                    // Textos cuando está en la pestaña RETIRAR
                     if (bankInput) bankInput.placeholder = "Nombre del Banco destinario";
                     if (nameInput) nameInput.placeholder = "Nombre completo de Beneficiario";
                 }
             }
+        };
 
         const AuthManager = {
             async login() { if(State.isProcessing) return; const e = document.getElementById('login-email').value, p = document.getElementById('login-password').value; if(!e || !p) return UI.notify("Completa campos", "error"); const btn = document.getElementById('btn-login'); btn.disabled = true; const { data, error } = await sb.auth.signInWithPassword({ email: e, password: p }); if(error) { UI.notify(error.message, "error"); btn.disabled = false; } else location.reload(); },
