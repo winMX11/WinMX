@@ -607,55 +607,45 @@
                         <button id="btn-slots-auto" onclick="GameLogic.slots.toggleAutoMenu()" class="btn-action w-16 py-5 font-casino text-xl flex flex-col items-center justify-center bg-zinc-800 text-emerald-500 transition-colors"><i class="fas fa-robot"></i></button>
                     </div>
 
-                    <div id="slots-auto-menu" class="hidden-view absolute bottom-28 left-3 right-3 z-50 rounded-xl overflow-hidden shadow-2xl border-2 border-emerald-500" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(5, 150, 105, 0.15) 100%); backdrop-filter: blur(30px);">
+                    <div id="slots-auto-menu" class="hidden-view absolute bottom-28 left-3 right-3 z-50 rounded-xl overflow-hidden shadow-2xl border-3 border-emerald-400" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
                         
                         <!-- Header profesional -->
-                        <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 16px; border-bottom: 2px solid rgba(16, 185, 129, 0.5);">
+                        <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 16px; border-bottom: 3px solid #0d9488;">
                             <div class="flex items-center justify-center gap-3">
-                                <i class="fas fa-robot text-white text-2xl"></i>
+                                <i class="fas fa-robot text-white text-3xl" style="animation: bounce 1s infinite;"></i>
                                 <div class="text-center flex-1">
-                                    <h3 class="text-white font-casino text-lg font-black uppercase tracking-widest">Giros Automáticos</h3>
-                                    <span class="text-emerald-100 text-[10px] font-bold uppercase">Selecciona la cantidad</span>
+                                    <h3 class="text-white font-casino text-2xl font-black uppercase tracking-widest">GIROS AUTO</h3>
+                                    <span class="text-white text-[12px] font-bold uppercase">Restantes: <span id="auto-spins-display" class="text-yellow-300 font-black text-lg">10</span></span>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Contenido -->
-                        <div class="p-6">
+                        <div class="p-6" style="background: rgba(5, 150, 105, 0.5);">
                             <!-- Botones de opciones mejorados -->
                             <div class="grid grid-cols-4 gap-3 mb-6">
-                                <button onclick="GameLogic.slots.selectAuto(10)" class="auto-opt relative group py-4 rounded-lg font-black text-sm transition-all duration-300 border-2 border-emerald-500/50 bg-emerald-500 text-black hover:bg-emerald-400 active:scale-95 shadow-lg hover:shadow-emerald-500/50">
+                                <button onclick="GameLogic.slots.selectAuto(10)" class="auto-opt relative group py-5 rounded-lg font-black text-sm transition-all duration-300 border-2 border-white bg-emerald-500 text-black hover:bg-emerald-400 active:scale-95 shadow-lg">
                                     10
-                                    <div class="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black/90 text-emerald-400 text-[9px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">10 Giros</div>
                                 </button>
-                                <button onclick="GameLogic.slots.selectAuto(20)" class="auto-opt relative group py-4 rounded-lg font-black text-sm transition-all duration-300 border-2 border-emerald-500/50 bg-zinc-800 text-white hover:bg-zinc-700 active:scale-95 shadow-lg hover:shadow-emerald-500/30">
+                                <button onclick="GameLogic.slots.selectAuto(20)" class="auto-opt relative group py-5 rounded-lg font-black text-sm transition-all duration-300 border-2 border-white bg-teal-600 text-white hover:bg-teal-500 active:scale-95 shadow-lg">
                                     20
-                                    <div class="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black/90 text-emerald-400 text-[9px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">20 Giros</div>
                                 </button>
-                                <button onclick="GameLogic.slots.selectAuto(50)" class="auto-opt relative group py-4 rounded-lg font-black text-sm transition-all duration-300 border-2 border-emerald-500/50 bg-zinc-800 text-white hover:bg-zinc-700 active:scale-95 shadow-lg hover:shadow-emerald-500/30">
+                                <button onclick="GameLogic.slots.selectAuto(50)" class="auto-opt relative group py-5 rounded-lg font-black text-sm transition-all duration-300 border-2 border-white bg-teal-600 text-white hover:bg-teal-500 active:scale-95 shadow-lg">
                                     50
-                                    <div class="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black/90 text-emerald-400 text-[9px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">50 Giros</div>
                                 </button>
-                                <button onclick="GameLogic.slots.selectAuto(100)" class="auto-opt relative group py-4 rounded-lg font-black text-sm transition-all duration-300 border-2 border-emerald-500/50 bg-zinc-800 text-white hover:bg-zinc-700 active:scale-95 shadow-lg hover:shadow-emerald-500/30">
+                                <button onclick="GameLogic.slots.selectAuto(100)" class="auto-opt relative group py-5 rounded-lg font-black text-sm transition-all duration-300 border-2 border-white bg-teal-600 text-white hover:bg-teal-500 active:scale-95 shadow-lg">
                                     100
-                                    <div class="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black/90 text-emerald-400 text-[9px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">100 Giros</div>
                                 </button>
-                            </div>
-
-                            <!-- Información de giros seleccionados -->
-                            <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 8px; padding: 12px; margin-bottom: 16px; text-center;">
-                                <span class="text-emerald-400 font-casino text-sm">Giros Seleccionados: </span>
-                                <span class="text-white font-black text-lg" id="auto-spins-display">10</span>
                             </div>
 
                             <!-- Botón iniciar -->
-                            <button onclick="GameLogic.slots.startAuto()" class="btn-action w-full py-4 font-casino text-lg font-black rounded-lg transition-all duration-300 shadow-lg hover:shadow-emerald-500/50 mb-3 border-2 border-emerald-500/50 uppercase tracking-wider">
-                                <i class="fas fa-play mr-2"></i> INICIAR AUTO
+                            <button onclick="GameLogic.slots.startAuto()" class="w-full py-4 font-casino text-lg font-black rounded-lg transition-all duration-300 shadow-lg mb-3 border-2 border-white uppercase tracking-wider bg-emerald-500 hover:bg-emerald-400 text-black hover:shadow-emerald-500/50">
+                                <i class="fas fa-play mr-2"></i> INICIAR
                             </button>
 
                             <!-- Botón cancelar -->
-                            <button onclick="GameLogic.slots.toggleAutoMenu()" class="w-full py-3 text-emerald-400 uppercase font-bold text-[11px] tracking-widest rounded-lg border-2 border-emerald-500/50 hover:bg-emerald-500/10 transition-all duration-300">
-                                <i class="fas fa-times mr-1"></i> Cancelar
+                            <button onclick="GameLogic.slots.toggleAutoMenu()" class="w-full py-3 text-white uppercase font-bold text-[12px] tracking-widest rounded-lg border-2 border-white hover:bg-white/20 transition-all duration-300 bg-black/30">
+                                <i class="fas fa-times mr-1"></i> CANCELAR
                             </button>
                         </div>
                     </div>
@@ -713,18 +703,6 @@
                 selectAuto(count) {
                     playSfx('click');
                     this.selectedAutoCount = count;
-                    
-                    // Actualizar display de giros seleccionados
-                    const displayEl = document.getElementById('auto-spins-display');
-                    if(displayEl) {
-                        displayEl.innerText = count;
-                        displayEl.style.animation = 'none';
-                        setTimeout(() => {
-                            displayEl.style.animation = 'pulse 0.5s ease-out';
-                        }, 10);
-                    }
-                    
-                    // Actualizar estilo de botones
                     document.querySelectorAll('.auto-opt').forEach(btn => {
                         btn.classList.remove('bg-emerald-500', 'text-black');
                         btn.classList.add('bg-zinc-800', 'text-white');
@@ -796,6 +774,15 @@
                         return UI.notify("Saldo insuficiente", "error"); 
                     } 
                     
+                    // RESTAR GIRO AUTOMÁTICO INMEDIATAMENTE AL INICIAR
+                    if (this.isAutoMode && this.autoSpinsLeft > 0) {
+                        this.autoSpinsLeft--;
+                        this.updateAutoUI();
+                        // Actualizar el display del menú también
+                        const displayEl = document.getElementById('auto-spins-display');
+                        if(displayEl) displayEl.innerText = this.autoSpinsLeft;
+                    }
+                    
                     // Bloquea el campo de apuesta para que no hagan trampa cambiándolo a la mitad de los giros
                     document.getElementById('slots-bet-input').disabled = this.isAutoMode;
 
@@ -863,9 +850,7 @@
 
                         // LÓGICA RECURSIVA PARA AUTO SPIN
                         if (this.isAutoMode) {
-                            this.autoSpinsLeft--;
-                            this.updateAutoUI();
-                            
+                            // Ya se restó al inicio, solo verificar si hay más giros
                             if (this.autoSpinsLeft > 0) {
                                 // Revisa una última vez por seguridad
                                 if (State.balance >= b) {
