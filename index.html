@@ -211,7 +211,7 @@
                 <div onclick="Router.openGame('tower')" class="glass p-6 text-center active:scale-95 transition-transform cursor-pointer"><span class="text-4xl block mb-2">🗼</span><span class="font-casino text-[9px] text-zinc-500 tracking-widest">Torre</span></div>
                 <div onclick="Router.openGame('blackjack')" class="glass p-6 text-center active:scale-95 transition-transform cursor-pointer"><span class="text-4xl block mb-2">🃏</span><span class="font-casino text-[9px] text-zinc-500 tracking-widest">Blackjack</span></div>
                 <div onclick="Router.openGame('chicken')" class="glass p-6 text-center active:scale-95 transition-transform cursor-pointer"><span class="text-4xl block mb-2">🐥</span><span class="font-casino text-[9px] text-zinc-500 tracking-widest">Chicken Road</span></div>
-                <div onclick="Router.showView('mundial')" class="col-span-2 active:scale-95 transition-transform cursor-pointer wc-header flex items-center gap-4 p-5" style="border-radius:1.5rem; margin-top:0;">
+                <div onclick="Router.showView('mundial')" class="col-span-2 active:scale-95 transition-transform cursor-pointer wc-header flex items-center gap-4 p-5" style="border-radius:1.5rem; margin-bottom: 8px;">
                     <div>
                         <span class="font-casino text-white text-lg italic tracking-tighter block leading-tight">Mundial <span class="text-yellow-400">2026</span></span>
                         <span class="text-[9px] text-blue-300 font-bold uppercase tracking-widest">Apuestas Deportivas</span>
@@ -232,32 +232,44 @@
                     </div>
                 </div>
             </div>
+            <!-- Solo 2 tabs: Partidos y Mis Apuestas -->
             <div style="display:flex; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08); border-radius:1rem; padding:6px; margin-bottom:20px;">
                 <div class="wc-tab active" id="wc-tab-partidos" onclick="WC.setTab('partidos')">⚽ Partidos</div>
-                <div class="wc-tab" id="wc-tab-ticket" onclick="WC.setTab('ticket')">🎫 Ticket (<span id="wc-ticket-count">0</span>)</div>
                 <div class="wc-tab" id="wc-tab-mis" onclick="WC.setTab('mis')">📋 Mis Apuestas</div>
             </div>
+
+            <!-- Tab Partidos: lista de partidos + ticket inline al fondo -->
             <div id="wc-partidos">
                 <div style="display:flex; gap:6px; overflow-x:auto; padding-bottom:8px; margin-bottom:16px; scrollbar-width:none;" id="wc-group-filters"></div>
                 <div id="wc-matches-list"></div>
-            </div>
-            <div id="wc-ticket" class="hidden-view">
-                <div id="wc-slip-items" class="space-y-2 mb-4"></div>
-                <div id="wc-slip-empty" class="text-center py-10">
-                    <div class="text-4xl mb-3">🎫</div>
-                    <p class="text-zinc-600 text-xs font-bold uppercase">Tu ticket está vacío</p>
-                    <p class="text-zinc-700 text-[9px] mt-1">Selecciona cuotas en los partidos</p>
-                </div>
-                <div id="wc-slip-footer" class="hidden-view">
-                    <div class="bet-slip-bar flex justify-between items-center mb-3">
-                        <div><span class="text-[9px] text-zinc-400 font-bold uppercase">Cuota Total</span><br><span id="wc-total-odd" class="font-casino text-emerald-500 text-xl">1.00x</span></div>
-                        <div class="text-right"><span class="text-[9px] text-zinc-400 font-bold uppercase">Ganancia Potencial</span><br><span id="wc-potential-win" class="font-casino text-white text-xl">$0.00</span></div>
+
+                <!-- TICKET INLINE: aparece aquí abajo cuando hay selecciones -->
+                <div id="wc-inline-ticket" class="hidden-view" style="margin-top:16px;">
+                    <div style="background:linear-gradient(135deg,rgba(16,185,129,0.12),rgba(16,185,129,0.03)); border:1px solid rgba(16,185,129,0.35); border-radius:1.2rem; padding:16px;">
+                        <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+                            <span style="font-size:16px;">🎫</span>
+                            <span style="font-family:'Archivo Black',sans-serif; font-size:11px; color:#10b981; text-transform:uppercase; letter-spacing:1px;">Tu Ticket</span>
+                            <span id="wc-ticket-count" style="background:rgba(16,185,129,0.2); color:#10b981; font-size:9px; font-weight:900; padding:2px 8px; border-radius:99px;">0</span>
+                            <button onclick="WC.clearSlip()" style="margin-left:auto; font-size:9px; font-weight:900; color:#555; text-transform:uppercase; background:none; border:none; cursor:pointer;">Limpiar</button>
+                        </div>
+                        <div id="wc-slip-items" style="margin-bottom:12px;"></div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); border-radius:0.8rem; padding:10px 12px; margin-bottom:12px;">
+                            <div>
+                                <span style="font-size:8px; color:#555; font-weight:700; text-transform:uppercase; display:block;">Cuota Total</span>
+                                <span id="wc-total-odd" style="font-family:'Archivo Black',sans-serif; color:#10b981; font-size:18px;">1.00x</span>
+                            </div>
+                            <div style="text-align:right;">
+                                <span style="font-size:8px; color:#555; font-weight:700; text-transform:uppercase; display:block;">Ganancia Potencial</span>
+                                <span id="wc-potential-win" style="font-family:'Archivo Black',sans-serif; color:white; font-size:18px;">$0.00</span>
+                            </div>
+                        </div>
+                        <input id="wc-bet-amount" type="number" min="10" placeholder="Monto a apostar ($10 mín)" class="input-bet" oninput="WC.updatePotential()">
+                        <button onclick="WC.placeBet()" class="btn-action w-full py-4 font-casino text-lg">⚽ APOSTAR TICKET</button>
                     </div>
-                    <input id="wc-bet-amount" type="number" min="10" placeholder="Monto a apostar ($10 mín)" class="input-bet mb-3" oninput="WC.updatePotential()">
-                    <button onclick="WC.placeBet()" class="btn-action w-full py-4 font-casino text-lg">⚽ APOSTAR TICKET</button>
-                    <button onclick="WC.clearSlip()" class="w-full mt-2 text-[9px] text-zinc-600 font-bold uppercase">Limpiar ticket</button>
                 </div>
             </div>
+
+            <!-- Tab Mis Apuestas -->
             <div id="wc-mis" class="hidden-view">
                 <div id="wc-my-bets-list"></div>
             </div>
@@ -931,51 +943,47 @@
             currentFilter: 'all',
             initialized: false,
 
-            // Complete match schedule with real odds
+            // Solo partidos de Fase de Grupos (equipos conocidos)
             matches: [
-                // FASE DE GRUPOS — Grupo A
+                // GRUPO A
                 { id:'ga1', phase:'Grupos', group:'A', home:'🇲🇽 México', away:'🇿🇦 Sudáfrica', homeOdd:1.85, drawOdd:3.50, awayOdd:4.20, date:'Jun 12', time:'17:00', venue:'SoFi, Los Ángeles', status:'upcoming' },
                 { id:'ga2', phase:'Grupos', group:'A', home:'🇺🇸 EE.UU.', away:'🇺🇾 Uruguay', homeOdd:2.10, drawOdd:3.30, awayOdd:3.60, date:'Jun 12', time:'20:00', venue:'MetLife, New York', status:'upcoming' },
                 { id:'ga3', phase:'Grupos', group:'A', home:'🇲🇽 México', away:'🇺🇾 Uruguay', homeOdd:2.40, drawOdd:3.10, awayOdd:2.90, date:'Jun 16', time:'19:00', venue:'AT&T, Dallas', status:'upcoming' },
                 { id:'ga4', phase:'Grupos', group:'A', home:'🇺🇸 EE.UU.', away:'🇿🇦 Sudáfrica', homeOdd:1.55, drawOdd:3.80, awayOdd:6.50, date:'Jun 16', time:'22:00', venue:'Rose Bowl, LA', status:'upcoming' },
-                { id:'ga5', phase:'Grupos', group:'A', home:'🇲🇽 México', away:'🇺🇸 EE.UU.', homeOdd:2.80, drawOdd:3.20, awayOdd:2.40, date:'Jun 20', time:'20:00', venue:'Azteca / MetLife', status:'upcoming' },
+                { id:'ga5', phase:'Grupos', group:'A', home:'🇲🇽 México', away:'🇺🇸 EE.UU.', homeOdd:2.80, drawOdd:3.20, awayOdd:2.40, date:'Jun 20', time:'20:00', venue:'MetLife, NY', status:'upcoming' },
                 { id:'ga6', phase:'Grupos', group:'A', home:'🇺🇾 Uruguay', away:'🇿🇦 Sudáfrica', homeOdd:1.65, drawOdd:3.60, awayOdd:5.80, date:'Jun 20', time:'20:00', venue:'Hard Rock, Miami', status:'upcoming' },
-                // FASE DE GRUPOS — Grupo B
-                { id:'gb1', phase:'Grupos', group:'B', home:'🇵🇹 Portugal', away:'🇨🇿 República Checa', homeOdd:1.45, drawOdd:4.20, awayOdd:7.00, date:'Jun 13', time:'16:00', venue:'Estadio Olímpico, LA', status:'upcoming' },
-                { id:'gb2', phase:'Grupos', group:'B', home:'🇹🇷 Turquía', away:'🇬🇪 Georgia', homeOdd:1.75, drawOdd:3.50, awayOdd:4.80, date:'Jun 13', time:'19:00', venue:'NRG Stadium, Houston', status:'upcoming' },
+                // GRUPO B
+                { id:'gb1', phase:'Grupos', group:'B', home:'🇵🇹 Portugal', away:'🇨🇿 Rep. Checa', homeOdd:1.45, drawOdd:4.20, awayOdd:7.00, date:'Jun 13', time:'16:00', venue:'LA Memorial Coliseum', status:'upcoming' },
+                { id:'gb2', phase:'Grupos', group:'B', home:'🇹🇷 Turquía', away:'🇬🇪 Georgia', homeOdd:1.75, drawOdd:3.50, awayOdd:4.80, date:'Jun 13', time:'19:00', venue:'NRG, Houston', status:'upcoming' },
                 { id:'gb3', phase:'Grupos', group:'B', home:'🇵🇹 Portugal', away:'🇹🇷 Turquía', homeOdd:1.60, drawOdd:3.80, awayOdd:5.20, date:'Jun 17', time:'18:00', venue:'MetLife, New York', status:'upcoming' },
-                // FASE DE GRUPOS — Grupo C
+                { id:'gb4', phase:'Grupos', group:'B', home:'🇬🇪 Georgia', away:'🇨🇿 Rep. Checa', homeOdd:2.60, drawOdd:3.10, awayOdd:2.70, date:'Jun 17', time:'18:00', venue:'SoFi, Los Ángeles', status:'upcoming' },
+                { id:'gb5', phase:'Grupos', group:'B', home:'🇵🇹 Portugal', away:'🇬🇪 Georgia', homeOdd:1.30, drawOdd:5.00, awayOdd:9.00, date:'Jun 21', time:'20:00', venue:'AT&T, Dallas', status:'upcoming' },
+                { id:'gb6', phase:'Grupos', group:'B', home:'🇨🇿 Rep. Checa', away:'🇹🇷 Turquía', homeOdd:2.80, drawOdd:3.20, awayOdd:2.50, date:'Jun 21', time:'20:00', venue:'Hard Rock, Miami', status:'upcoming' },
+                // GRUPO C
                 { id:'gc1', phase:'Grupos', group:'C', home:'🇦🇷 Argentina', away:'🇨🇱 Chile', homeOdd:1.28, drawOdd:5.50, awayOdd:9.00, date:'Jun 13', time:'22:00', venue:'Hard Rock, Miami', status:'upcoming' },
                 { id:'gc2', phase:'Grupos', group:'C', home:'🇦🇷 Argentina', away:'🇦🇺 Australia', homeOdd:1.22, drawOdd:6.00, awayOdd:12.00, date:'Jun 17', time:'20:00', venue:'Rose Bowl, LA', status:'upcoming' },
-                { id:'gc3', phase:'Grupos', group:'C', home:'🇦🇷 Argentina', away:'🇾🇪 Yemen', homeOdd:1.05, drawOdd:14.00, awayOdd:50.00, date:'Jun 21', time:'20:00', venue:'NRG, Houston', status:'upcoming' },
-                // FASE DE GRUPOS — Grupo D
+                { id:'gc3', phase:'Grupos', group:'C', home:'🇦🇷 Argentina', away:'🇳🇦 Namibia', homeOdd:1.05, drawOdd:14.00, awayOdd:40.00, date:'Jun 21', time:'20:00', venue:'NRG, Houston', status:'upcoming' },
+                { id:'gc4', phase:'Grupos', group:'C', home:'🇦🇺 Australia', away:'🇨🇱 Chile', homeOdd:2.20, drawOdd:3.10, awayOdd:3.20, date:'Jun 13', time:'22:00', venue:'AT&T, Dallas', status:'upcoming' },
+                // GRUPO D
                 { id:'gd1', phase:'Grupos', group:'D', home:'🏴󠁧󠁢󠁥󠁮󠁧󠁿 Inglaterra', away:'🇸🇳 Senegal', homeOdd:1.35, drawOdd:4.80, awayOdd:8.50, date:'Jun 14', time:'17:00', venue:'SoFi, Los Ángeles', status:'upcoming' },
                 { id:'gd2', phase:'Grupos', group:'D', home:'🇩🇪 Alemania', away:'🇯🇵 Japón', homeOdd:1.70, drawOdd:3.60, awayOdd:5.00, date:'Jun 14', time:'20:00', venue:'AT&T, Dallas', status:'upcoming' },
                 { id:'gd3', phase:'Grupos', group:'D', home:'🏴󠁧󠁢󠁥󠁮󠁧󠁿 Inglaterra', away:'🇩🇪 Alemania', homeOdd:2.20, drawOdd:3.10, awayOdd:3.20, date:'Jun 18', time:'20:00', venue:'MetLife, New York', status:'upcoming' },
-                // FASE DE GRUPOS — Grupo E
+                { id:'gd4', phase:'Grupos', group:'D', home:'🇯🇵 Japón', away:'🇸🇳 Senegal', homeOdd:2.00, drawOdd:3.20, awayOdd:3.60, date:'Jun 18', time:'17:00', venue:'Rose Bowl, LA', status:'upcoming' },
+                { id:'gd5', phase:'Grupos', group:'D', home:'🏴󠁧󠁢󠁥󠁮󠁧󠁿 Inglaterra', away:'🇯🇵 Japón', homeOdd:1.45, drawOdd:4.20, awayOdd:7.50, date:'Jun 22', time:'20:00', venue:'Hard Rock, Miami', status:'upcoming' },
+                { id:'gd6', phase:'Grupos', group:'D', home:'🇩🇪 Alemania', away:'🇸🇳 Senegal', homeOdd:1.55, drawOdd:3.80, awayOdd:6.00, date:'Jun 22', time:'20:00', venue:'NRG, Houston', status:'upcoming' },
+                // GRUPO E
                 { id:'ge1', phase:'Grupos', group:'E', home:'🇫🇷 Francia', away:'🇲🇦 Marruecos', homeOdd:1.50, drawOdd:4.00, awayOdd:6.50, date:'Jun 14', time:'22:00', venue:'Estadio Azteca, CDMX', status:'upcoming' },
                 { id:'ge2', phase:'Grupos', group:'E', home:'🇫🇷 Francia', away:'🇨🇦 Canadá', homeOdd:1.40, drawOdd:4.50, awayOdd:7.50, date:'Jun 18', time:'18:00', venue:'BC Place, Vancouver', status:'upcoming' },
                 { id:'ge3', phase:'Grupos', group:'E', home:'🇨🇦 Canadá', away:'🇲🇦 Marruecos', homeOdd:2.50, drawOdd:3.20, awayOdd:2.80, date:'Jun 22', time:'20:00', venue:'BMO Field, Toronto', status:'upcoming' },
-                // FASE DE GRUPOS — Grupo F
+                { id:'ge4', phase:'Grupos', group:'E', home:'🇫🇷 Francia', away:'🇧🇪 Bélgica', homeOdd:1.80, drawOdd:3.50, awayOdd:4.20, date:'Jun 18', time:'21:00', venue:'Levi\'s, SF', status:'upcoming' },
+                // GRUPO F
                 { id:'gf1', phase:'Grupos', group:'F', home:'🇧🇷 Brasil', away:'🇳🇬 Nigeria', homeOdd:1.30, drawOdd:5.20, awayOdd:9.50, date:'Jun 15', time:'17:00', venue:'Hard Rock, Miami', status:'upcoming' },
                 { id:'gf2', phase:'Grupos', group:'F', home:'🇧🇷 Brasil', away:'🇨🇷 Costa Rica', homeOdd:1.15, drawOdd:7.00, awayOdd:18.00, date:'Jun 19', time:'17:00', venue:'SoFi, Los Ángeles', status:'upcoming' },
                 { id:'gf3', phase:'Grupos', group:'F', home:'🇧🇷 Brasil', away:'🇨🇲 Camerún', homeOdd:1.20, drawOdd:6.50, awayOdd:14.00, date:'Jun 23', time:'20:00', venue:'NRG, Houston', status:'upcoming' },
-                // OCTAVOS DE FINAL
-                { id:'oct1', phase:'Octavos', group:'-', home:'🇦🇷 Argentina', away:'🇵🇹 Portugal', homeOdd:2.00, drawOdd:3.40, awayOdd:3.50, date:'Jun 29', time:'20:00', venue:'MetLife, New York', status:'upcoming' },
-                { id:'oct2', phase:'Octavos', group:'-', home:'🇫🇷 Francia', away:'🇧🇷 Brasil', homeOdd:2.20, drawOdd:3.20, awayOdd:3.10, date:'Jun 30', time:'20:00', venue:'Rose Bowl, LA', status:'upcoming' },
-                { id:'oct3', phase:'Octavos', group:'-', home:'🏴󠁧󠁢󠁥󠁮󠁧󠁿 Inglaterra', away:'🇩🇪 Alemania', homeOdd:2.10, drawOdd:3.20, awayOdd:3.40, date:'Jul 1', time:'20:00', venue:'AT&T, Dallas', status:'upcoming' },
-                { id:'oct4', phase:'Octavos', group:'-', home:'🇲🇽 México', away:'🇺🇾 Uruguay', homeOdd:2.40, drawOdd:3.10, awayOdd:2.90, date:'Jul 2', time:'20:00', venue:'SoFi, Los Ángeles', status:'upcoming' },
-                // CUARTOS DE FINAL
-                { id:'qtr1', phase:'Cuartos', group:'-', home:'🏆 Ganador Oct1', away:'🏆 Ganador Oct2', homeOdd:1.90, drawOdd:3.40, awayOdd:3.80, date:'Jul 5', time:'20:00', venue:'MetLife, New York', status:'upcoming' },
-                { id:'qtr2', phase:'Cuartos', group:'-', home:'🏆 Ganador Oct3', away:'🏆 Ganador Oct4', homeOdd:2.00, drawOdd:3.30, awayOdd:3.50, date:'Jul 6', time:'20:00', venue:'Rose Bowl, LA', status:'upcoming' },
-                // SEMIFINALES
-                { id:'sf1', phase:'Semis', group:'-', home:'🏆 Semi 1', away:'🏆 Semi 2', homeOdd:1.95, drawOdd:3.30, awayOdd:3.70, date:'Jul 9', time:'20:00', venue:'MetLife, New York', status:'upcoming' },
-                { id:'sf2', phase:'Semis', group:'-', home:'🏆 Semi 3', away:'🏆 Semi 4', homeOdd:2.05, drawOdd:3.20, awayOdd:3.50, date:'Jul 10', time:'20:00', venue:'AT&T, Dallas', status:'upcoming' },
-                // FINAL
-                { id:'fin1', phase:'Final', group:'-', home:'🏆 Finalista 1', away:'🏆 Finalista 2', homeOdd:2.10, drawOdd:3.10, awayOdd:3.20, date:'Jul 19', time:'17:00', venue:'MetLife, New York', status:'upcoming' },
+                { id:'gf4', phase:'Grupos', group:'F', home:'🇳🇬 Nigeria', away:'🇨🇷 Costa Rica', homeOdd:1.85, drawOdd:3.40, awayOdd:4.20, date:'Jun 15', time:'20:00', venue:'AT&T, Dallas', status:'upcoming' },
             ],
 
-            phaseColors: { 'Grupos':'phase-group', 'Octavos':'phase-oct', 'Cuartos':'phase-qtr', 'Semis':'phase-semi', 'Final':'phase-final' },
+            phaseColors: { 'Grupos':'phase-group' },
 
             init() {
                 if (!this.initialized) {
@@ -989,22 +997,21 @@
 
             setTab(tab) {
                 this.activeTab = tab;
-                ['partidos','ticket','mis'].forEach(t => {
+                ['partidos','mis'].forEach(t => {
                     document.getElementById(`wc-${t}`).classList.toggle('hidden-view', t !== tab);
                     document.getElementById(`wc-tab-${t}`).classList.toggle('active', t === tab);
                 });
-                if (tab === 'ticket') this.renderSlip();
                 if (tab === 'mis') this.renderMyBets();
-                if (tab === 'partidos') this.renderMatches();
+                if (tab === 'partidos') { this.renderMatches(); this.renderInlineTicket(); }
             },
 
             renderFilters() {
                 const container = document.getElementById('wc-group-filters');
-                const phases = ['Todos','Grupos','Octavos','Cuartos','Semis','Final'];
-                container.innerHTML = phases.map(p => {
-                    const val = p === 'Todos' ? 'all' : p;
+                const groups = ['Todos','A','B','C','D','E','F'];
+                container.innerHTML = groups.map(g => {
+                    const val = g === 'Todos' ? 'all' : g;
                     const active = this.currentFilter === val;
-                    return `<button onclick="WC.filterBy('${val}')" style="white-space:nowrap; padding:6px 14px; border-radius:99px; font-size:9px; font-weight:900; text-transform:uppercase; border:1px solid ${active ? 'var(--mx-green)' : 'rgba(255,255,255,0.1)'}; background:${active ? 'var(--mx-green)' : 'rgba(255,255,255,0.03)'}; color:${active ? 'black' : '#888'}; cursor:pointer; transition:all 0.25s;">${p}</button>`;
+                    return `<button onclick="WC.filterBy('${val}')" style="white-space:nowrap; padding:6px 14px; border-radius:99px; font-size:9px; font-weight:900; text-transform:uppercase; border:1px solid ${active ? 'var(--mx-green)' : 'rgba(255,255,255,0.1)'}; background:${active ? 'var(--mx-green)' : 'rgba(255,255,255,0.03)'}; color:${active ? 'black' : '#888'}; cursor:pointer;">${g === 'Todos' ? 'Todos' : 'Grupo ' + g}</button>`;
                 }).join('');
             },
 
@@ -1016,15 +1023,12 @@
 
             renderMatches() {
                 const list = document.getElementById('wc-matches-list');
-                const filtered = this.currentFilter === 'all' ? this.matches : this.matches.filter(m => m.phase === this.currentFilter);
-                
-                // Group by phase
-                const byPhase = {};
-                filtered.forEach(m => { if(!byPhase[m.phase]) byPhase[m.phase] = []; byPhase[m.phase].push(m); });
-
-                list.innerHTML = Object.entries(byPhase).map(([phase, matches]) => `
-                    <div class="mb-1" style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
-                        <span class="phase-badge ${this.phaseColors[phase] || 'phase-group'}">${phase}</span>
+                const filtered = this.currentFilter === 'all' ? this.matches : this.matches.filter(m => m.group === this.currentFilter);
+                const byGroup = {};
+                filtered.forEach(m => { if(!byGroup[m.group]) byGroup[m.group] = []; byGroup[m.group].push(m); });
+                list.innerHTML = Object.entries(byGroup).map(([group, matches]) => `
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                        <span class="phase-badge phase-group">Grupo ${group}</span>
                         <div style="flex:1; height:1px; background:rgba(255,255,255,0.05);"></div>
                     </div>
                     ${matches.map(m => this.matchCard(m)).join('')}
@@ -1035,45 +1039,34 @@
                 const slip = this.slip[m.id];
                 const hasBet = !!slip;
                 const h1Selected = hasBet && slip.pick === '1' ? 'selected' : '';
-                const xSelected = hasBet && slip.pick === 'X' ? 'selected' : '';
+                const xSelected  = hasBet && slip.pick === 'X' ? 'selected' : '';
                 const h2Selected = hasBet && slip.pick === '2' ? 'selected' : '';
-                const phaseColor = this.phaseColors[m.phase] || 'phase-group';
                 const settledClass = m.settled ? (m.result === (slip && slip.pick) ? 'settled-win' : (slip ? 'settled-loss' : '')) : '';
-
                 return `
                 <div class="match-card ${hasBet ? 'has-bet' : ''} ${settledClass}" id="mc-${m.id}">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                         <span style="font-size:8px; color:#555; font-weight:700; text-transform:uppercase;">${m.date} · ${m.time} · ${m.venue}</span>
-                        ${m.status==='live' ? '<span style="font-size:8px; font-weight:900; color:#ef4444; text-transform:uppercase; display:flex; align-items:center; gap:4px;"><span class="live-pulse" style="width:6px;height:6px;background:#ef4444;border-radius:50%;display:inline-block;"></span>EN VIVO</span>' : ''}
-                        ${m.settled ? `<span class="result-badge" style="background:rgba(255,255,255,0.05); color:#888;">FIN ${m.scoreHome}-${m.scoreAway}</span>` : ''}
+                        ${m.status==='live' ? '<span style="font-size:8px; font-weight:900; color:#ef4444; display:flex; align-items:center; gap:4px;"><span class="live-pulse" style="width:6px;height:6px;background:#ef4444;border-radius:50%;display:inline-block;"></span>EN VIVO</span>' : ''}
+                        ${m.settled ? `<span style="font-size:9px; font-weight:900; color:#888;">FIN ${m.scoreHome}-${m.scoreAway}</span>` : ''}
                     </div>
                     <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
-                        <div style="flex:1; text-align:right;">
-                            <span style="font-size:11px; font-weight:900; color:white; display:block; line-height:1.2;">${m.home}</span>
-                        </div>
-                        <div style="padding:4px 10px; background:rgba(255,255,255,0.04); border-radius:8px; border:1px solid rgba(255,255,255,0.06);">
-                            <span style="font-family:'Archivo Black',sans-serif; font-size:11px; color:#666;">VS</span>
-                        </div>
-                        <div style="flex:1; text-align:left;">
-                            <span style="font-size:11px; font-weight:900; color:white; display:block; line-height:1.2;">${m.away}</span>
-                        </div>
+                        <div style="flex:1; text-align:right;"><span style="font-size:11px; font-weight:900; color:white; display:block; line-height:1.3;">${m.home}</span></div>
+                        <div style="padding:4px 10px; background:rgba(255,255,255,0.04); border-radius:8px; border:1px solid rgba(255,255,255,0.06);"><span style="font-family:'Archivo Black',sans-serif; font-size:11px; color:#444;">VS</span></div>
+                        <div style="flex:1; text-align:left;"><span style="font-size:11px; font-weight:900; color:white; display:block; line-height:1.3;">${m.away}</span></div>
                     </div>
                     ${m.settled ? `
-                    <div style="text-align:center; padding:8px; background:rgba(255,255,255,0.03); border-radius:0.8rem; font-size:10px; font-weight:900; color:${m.result === (slip&&slip.pick) ? '#10b981' : '#ef4444'};">
-                        ${m.result === (slip&&slip.pick) ? '✅ Acertaste esta predicción' : (slip ? '❌ No acertaste esta predicción' : 'Partido terminado')}
+                    <div style="text-align:center; padding:8px; background:rgba(255,255,255,0.03); border-radius:0.8rem; font-size:10px; font-weight:900; color:${m.result===(slip&&slip.pick)?'#10b981':'#ef4444'};">
+                        ${m.result===(slip&&slip.pick) ? '✅ Acertaste esta predicción' : (slip ? '❌ No acertaste' : 'Partido finalizado')}
                     </div>` : `
                     <div style="display:flex; gap:8px;">
                         <div class="odd-btn ${h1Selected}" onclick="WC.togglePick('${m.id}','1','${m.home}',${m.homeOdd})">
-                            <span class="odd-label">1 Local</span>
-                            <span class="odd-value">${m.homeOdd.toFixed(2)}</span>
+                            <span class="odd-label">1 Local</span><span class="odd-value">${m.homeOdd.toFixed(2)}</span>
                         </div>
                         <div class="odd-btn ${xSelected}" onclick="WC.togglePick('${m.id}','X','Empate',${m.drawOdd})">
-                            <span class="odd-label">X Empate</span>
-                            <span class="odd-value">${m.drawOdd.toFixed(2)}</span>
+                            <span class="odd-label">X Empate</span><span class="odd-value">${m.drawOdd.toFixed(2)}</span>
                         </div>
                         <div class="odd-btn ${h2Selected}" onclick="WC.togglePick('${m.id}','2','${m.away}',${m.awayOdd})">
-                            <span class="odd-label">2 Visitante</span>
-                            <span class="odd-value">${m.awayOdd.toFixed(2)}</span>
+                            <span class="odd-label">2 Visitante</span><span class="odd-value">${m.awayOdd.toFixed(2)}</span>
                         </div>
                     </div>`}
                 </div>`;
@@ -1089,13 +1082,11 @@
                     this.slip[matchId] = { pick, label, odd, matchHome: m.home, matchAway: m.away, date: m.date, time: m.time };
                 }
                 this.updateTicketCount();
-                // Re-render just the odds buttons
+                // Re-render solo el card del partido
                 const card = document.getElementById(`mc-${matchId}`);
-                if (card) {
-                    const newCard = document.createElement('div');
-                    newCard.innerHTML = this.matchCard(m);
-                    card.replaceWith(newCard.firstElementChild);
-                }
+                if (card) { const d = document.createElement('div'); d.innerHTML = this.matchCard(m); card.replaceWith(d.firstElementChild); }
+                // Mostrar/ocultar ticket inline al fondo
+                this.renderInlineTicket();
             },
 
             updateTicketCount() {
@@ -1111,49 +1102,71 @@
             updatePotential() {
                 const amt = parseFloat(document.getElementById('wc-bet-amount').value) || 0;
                 const totalOdd = this.getTotalOdd();
-                document.getElementById('wc-total-odd').innerText = totalOdd.toFixed(2) + 'x';
-                document.getElementById('wc-potential-win').innerText = `$${(amt * totalOdd).toFixed(2)}`;
+                const totalOddEl = document.getElementById('wc-total-odd');
+                const potWinEl = document.getElementById('wc-potential-win');
+                if (totalOddEl) totalOddEl.innerText = totalOdd.toFixed(2) + 'x';
+                if (potWinEl) potWinEl.innerText = `$${(amt * totalOdd).toFixed(2)}`;
             },
 
-            renderSlip() {
+            renderInlineTicket() {
+                const ticketEl = document.getElementById('wc-inline-ticket');
+                if (!ticketEl) return;
                 const items = Object.entries(this.slip);
-                const slipItems = document.getElementById('wc-slip-items');
-                const slipEmpty = document.getElementById('wc-slip-empty');
-                const slipFooter = document.getElementById('wc-slip-footer');
-                
                 if (items.length === 0) {
-                    slipItems.innerHTML = '';
-                    slipEmpty.classList.remove('hidden-view');
-                    slipFooter.classList.add('hidden-view');
+                    ticketEl.classList.add('hidden-view');
                     return;
                 }
-                slipEmpty.classList.add('hidden-view');
-                slipFooter.classList.remove('hidden-view');
-                slipItems.innerHTML = items.map(([matchId, s]) => `
-                    <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); border-radius:0.8rem; padding:10px 12px;">
-                        <div>
-                            <span style="font-size:8px; color:#666; font-weight:700; text-transform:uppercase;">${s.matchHome} vs ${s.matchAway}</span>
-                            <div style="font-size:10px; font-weight:900; color:white; margin-top:2px;">${s.label}</div>
+                ticketEl.classList.remove('hidden-view');
+                // Render slip items
+                const slipItemsEl = document.getElementById('wc-slip-items');
+                if (slipItemsEl) {
+                    slipItemsEl.innerHTML = items.map(([matchId, s]) => `
+                        <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); border-radius:0.7rem; padding:8px 10px; margin-bottom:6px;">
+                            <div>
+                                <span style="font-size:8px; color:#555; font-weight:700; display:block;">${s.matchHome} vs ${s.matchAway}</span>
+                                <span style="font-size:10px; font-weight:900; color:white;">${s.label}</span>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span style="font-family:'Archivo Black',sans-serif; color:#10b981; font-size:14px;">${s.odd.toFixed(2)}</span>
+                                <button onclick="WC.removePick('${matchId}')" style="color:#555; font-size:16px; background:none; border:none; cursor:pointer; line-height:1;">✕</button>
+                            </div>
                         </div>
-                        <div style="display:flex; align-items:center; gap:10px;">
-                            <span style="font-family:'Archivo Black',sans-serif; color:#10b981; font-size:14px;">${s.odd.toFixed(2)}</span>
-                            <button onclick="WC.removePick('${matchId}')" style="color:#555; font-size:14px; line-height:1; background:none; border:none; cursor:pointer;">✕</button>
-                        </div>
-                    </div>
-                `).join('');
+                    `).join('');
+                }
+                this.updateTicketCount();
                 this.updatePotential();
+                // Scroll down to ticket
+                setTimeout(() => { ticketEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 100);
             },
+
+            // renderSlip kept for compatibility (no longer used for tab)
+            renderSlip() { this.renderInlineTicket(); },
 
             removePick(matchId) {
                 delete this.slip[matchId];
                 this.updateTicketCount();
-                this.renderSlip();
+                // Re-render card to deselect
+                const m = this.matches.find(x => x.id === matchId);
+                if (m) {
+                    const card = document.getElementById(`mc-${matchId}`);
+                    if (card) { const d = document.createElement('div'); d.innerHTML = this.matchCard(m); card.replaceWith(d.firstElementChild); }
+                }
+                this.renderInlineTicket();
             },
 
             clearSlip() {
+                const prevSlip = {...this.slip};
                 this.slip = {};
                 this.updateTicketCount();
-                this.renderSlip();
+                // Re-render all affected cards
+                Object.keys(prevSlip).forEach(matchId => {
+                    const m = this.matches.find(x => x.id === matchId);
+                    if (m) {
+                        const card = document.getElementById(`mc-${matchId}`);
+                        if (card) { const d = document.createElement('div'); d.innerHTML = this.matchCard(m); card.replaceWith(d.firstElementChild); }
+                    }
+                });
+                this.renderInlineTicket();
             },
 
             async placeBet() {
@@ -1162,7 +1175,6 @@
                 if (!amt || amt < 10) return UI.notify("Apuesta mínima $10 MXN", "error");
                 if (Object.keys(this.slip).length === 0) return UI.notify("Agrega al menos un partido", "error");
                 if (State.balance < amt) return UI.notify("Saldo insuficiente", "error");
-
                 State.isProcessing = true;
                 try {
                     const totalOdd = this.getTotalOdd();
@@ -1171,39 +1183,26 @@
                         matchId: id, pick: s.pick, label: s.label, odd: s.odd,
                         matchHome: s.matchHome, matchAway: s.matchAway
                     }));
-
                     await Core.updateBalanceDB(-amt);
                     State.balance -= amt;
                     UI.updateBalance();
-
-                    // Save bet to local storage + DB history
-                    const betId = `wc_${Date.now()}`;
                     const betObj = {
-                        id: betId,
-                        userId: State.user.id,
-                        amount: amt,
-                        totalOdd,
-                        potentialWin,
-                        picks,
-                        status: 'pending',
-                        created: new Date().toISOString()
+                        id: `wc_${Date.now()}`, userId: State.user.id,
+                        amount: amt, totalOdd, potentialWin, picks,
+                        status: 'pending', created: new Date().toISOString()
                     };
                     let bets = JSON.parse(localStorage.getItem('wcBets') || '[]');
                     bets.push(betObj);
                     localStorage.setItem('wcBets', JSON.stringify(bets));
-
                     await Core.recordHistory({
-                        user_id: State.user.id,
-                        type: 'bets',
-                        amount: -amt,
+                        user_id: State.user.id, type: 'bets', amount: -amt,
                         label: `⚽ MUNDIAL (${picks.length} PARTIDO${picks.length>1?'S':''}) @ ${totalOdd.toFixed(2)}x`,
                         status: 'pending'
                     });
-
                     playSfx('win');
-                    UI.notify(`✅ Ticket apostado! Posible ganancia: $${potentialWin.toFixed(2)}`, "success");
-                    this.clearSlip();
+                    UI.notify(`✅ ¡Ticket apostado! Ganancia posible: $${potentialWin.toFixed(2)}`, "success");
                     document.getElementById('wc-bet-amount').value = '';
+                    this.clearSlip();
                     this.setTab('mis');
                 } catch(e) {
                     UI.notify("Error al procesar apuesta", "error");
@@ -1213,7 +1212,6 @@
             },
 
             loadLocalBets() {
-                // Simulate resolving old pending bets with random outcomes for demo
                 let bets = JSON.parse(localStorage.getItem('wcBets') || '[]');
                 const now = Date.now();
                 let changed = false;
@@ -1221,7 +1219,7 @@
                     if (b.userId !== State.user?.id) return b;
                     if (b.status === 'pending') {
                         const age = now - new Date(b.created).getTime();
-                        if (age > 300000) { // 5 min → auto-resolve for demo
+                        if (age > 300000) {
                             const win = Math.random() < 0.38;
                             b.status = win ? 'won' : 'lost';
                             b.resolvedWin = win ? b.potentialWin : 0;
@@ -1230,7 +1228,7 @@
                                 Core.updateBalanceDB(b.potentialWin);
                                 State.balance += b.potentialWin;
                                 UI.updateBalance();
-                                setTimeout(() => UI.notify(`🏆 ¡GANASTE! +$${b.potentialWin.toFixed(2)} del Mundial`, "success"), 800);
+                                setTimeout(() => { playSfx('win'); UI.notify(`🏆 ¡GANASTE $${b.potentialWin.toFixed(2)} del Mundial!`, "success"); }, 800);
                             }
                         }
                     }
