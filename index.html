@@ -70,17 +70,6 @@
         .chicken-sprite { font-size: 2rem; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); position: absolute; z-index: 20; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4)); }
         .car-sprite { position: absolute; font-size: 1.5rem; animation: carMove 1s forwards; z-index: 10; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5)); }
         @keyframes carMove { from { top: -50px; } to { top: 250px; } }
-
-        /* ── ADMIN PANEL ── */
-        #wc-admin-overlay { position:fixed;inset:0;z-index:600;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:opacity 0.3s; }
-        #wc-admin-overlay.open { opacity:1;pointer-events:all; }
-        #wc-admin-panel { position:fixed;left:0;right:0;bottom:0;z-index:601;transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);background:linear-gradient(180deg,#111 0%,#080808 100%);border-top:1px solid rgba(16,185,129,0.4);border-radius:1.5rem 1.5rem 0 0;padding:0 0 32px 0;max-height:90dvh;display:flex;flex-direction:column;box-shadow:0 -8px 40px rgba(0,0,0,0.9); }
-        #wc-admin-panel.open { transform:translateY(0); }
-        #wc-admin-body { overflow-y:auto;flex:1;padding:0 16px;scrollbar-width:none; }
-        #wc-admin-body::-webkit-scrollbar { display:none; }
-        #wc-admin-panel details summary { list-style:none; }
-        #wc-admin-panel details summary::-webkit-details-marker { display:none; }
-
         /* MUNDIAL 2026 STYLES */
         .wc-header { background: linear-gradient(135deg, #003580 0%, #002060 40%, #8B0000 100%); border-radius: 1.5rem; padding: 20px; position: relative; overflow: hidden; }
         .wc-header::before { content: '⚽'; position: absolute; right: -10px; top: -10px; font-size: 5rem; opacity: 0.12; transform: rotate(-20deg); }
@@ -220,11 +209,21 @@
                     <span class="text-3xl">🏆</span>
                     <div>
                         <h2 class="font-casino text-white text-xl italic">FIFA Mundial <span class="text-yellow-400">2026</span></h2>
-                        <p class="text-[9px] text-blue-300 font-bold uppercase tracking-widest">Apuestas en tiempo real · Mundial 2026</p>
+                        <p class="text-[9px] text-blue-300 font-bold uppercase tracking-widest">Datos en tiempo real · API-Football</p>
                     </div>
-                    <button onclick="WCAdmin.open()" style="margin-left:auto;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);color:#fbbf24;border-radius:8px;padding:6px 10px;font-size:8px;font-weight:900;text-transform:uppercase;cursor:pointer;">⚙️ Admin</button>
-
+                    <button onclick="WC.loadFixtures(true)" style="margin-left:auto;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:#10b981;border-radius:8px;padding:6px 10px;font-size:8px;font-weight:900;text-transform:uppercase;cursor:pointer;">🔄 Actualizar</button>
                 </div>
+            </div>
+
+            <!-- API Key Banner (shown when key not configured) -->
+            <div id="api-key-banner">
+                <p style="font-size:9px;font-weight:900;color:#fbbf24;text-transform:uppercase;margin-bottom:8px;">⚠️ Configura tu API Key</p>
+                <p style="font-size:8px;color:#aaa;margin-bottom:10px;">Para ver partidos reales necesitas una API Key gratuita de <strong style="color:white;">api-football.com</strong> vía RapidAPI.</p>
+                <div style="display:flex;gap:8px;">
+                    <input id="api-key-input" type="text" placeholder="Pega aquí tu RapidAPI Key..." style="flex:1;background:rgba(0,0,0,0.4);border:1px solid rgba(251,191,36,0.3);border-radius:8px;padding:8px 10px;color:white;font-size:9px;outline:none;">
+                    <button onclick="WC.saveApiKey()" style="background:rgba(251,191,36,0.2);border:1px solid rgba(251,191,36,0.4);color:#fbbf24;border-radius:8px;padding:8px 14px;font-size:9px;font-weight:900;text-transform:uppercase;cursor:pointer;white-space:nowrap;">Guardar</button>
+                </div>
+                <a href="https://rapidapi.com/api-sports/api/api-football" target="_blank" style="font-size:8px;color:#10b981;display:block;margin-top:8px;text-decoration:underline;">→ Obtener API Key gratis (500 req/día)</a>
             </div>
 
             <div style="display:flex; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08); border-radius:1rem; padding:6px; margin-bottom:20px;">
@@ -444,588 +443,399 @@
         });
 
         // ========================================================
-        // MUNDIAL 2026 — MOTOR REAL v2 (API-Football via RapidAPI)
-        // Fixes: timeout, errores 403/429, refresh DOM quirúrgico,
-        //        flash en gol, filtros en vivo, botón refresh manual
+
         // ========================================================
-        // ================================================================
-        // MUNDIAL 2026 — MOTOR MANUAL + PANEL ADMIN
-        // Los partidos se gestionan manualmente desde el panel de admin.
-        // Almacenamiento: localStorage (clave 'wc_matches_v2') —
-        // el admin actualiza y todos los usuarios ven los cambios en
-        // tiempo real (polling cada 5s desde localStorage compartido
-        // entre pestañas; para multi-dispositivo usa Supabase realtime).
-        // ================================================================
-        const ADMIN_PASSWORD = 'winmx2026admin'; // ← cambia esto
-
-        // ── Almacén de partidos (persiste en localStorage) ──────────────
-        const WCStore = {
-            KEY: 'wc_matches_v2',
-            save(matches) { localStorage.setItem(this.KEY, JSON.stringify(matches)); },
-            load() {
-                try { return JSON.parse(localStorage.getItem(this.KEY) || '[]'); }
-                catch(e) { return []; }
-            },
-            // Genera ID único para partido nuevo
-            newId() { return 'wm_' + Date.now() + '_' + Math.floor(Math.random()*1000); }
-        };
-
-        // ── Motor principal ──────────────────────────────────────────────
+        // MUNDIAL 2026 — MOTOR SUPABASE (Admin-Controlled)
+        // Los partidos y marcadores los controla el admin en tiempo real
+        // ========================================================
         const WC = {
             slip: {},
             activeTab: 'partidos',
             currentFilter: 'all',
             initialized: false,
             matches: [],
-            _pollTimer: null,
-            _lastHash: '',
 
-            FLAG_MAP: {
-                'México':'🇲🇽','Estados Unidos':'🇺🇸','Canadá':'🇨🇦',
-                'Brasil':'🇧🇷','Argentina':'🇦🇷','Francia':'🇫🇷',
-                'Alemania':'🇩🇪','España':'🇪🇸','Inglaterra':'🏴󠁧󠁢󠁥󠁮󠁧󠁿',
-                'Portugal':'🇵🇹','Países Bajos':'🇳🇱','Italia':'🇮🇹',
-                'Bélgica':'🇧🇪','Croacia':'🇭🇷','Uruguay':'🇺🇾',
-                'Colombia':'🇨🇴','Japón':'🇯🇵','Corea del Sur':'🇰🇷',
-                'Marruecos':'🇲🇦','Senegal':'🇸🇳','Australia':'🇦🇺',
-                'Suiza':'🇨🇭','Dinamarca':'🇩🇰','Polonia':'🇵🇱',
-                'Serbia':'🇷🇸','Ecuador':'🇪🇨','Ghana':'🇬🇭',
-                'Camerún':'🇨🇲','Túnez':'🇹🇳','Irán':'🇮🇷',
-                'Arabia Saudita':'🇸🇦','Gales':'🏴󠁧󠁢󠁷󠁬󠁳󠁿','Escocia':'🏴󠁧󠁢󠁳󠁣󠁴󠁿',
-                'Noruega':'🇳🇴','Suecia':'🇸🇪','Austria':'🇦🇹',
-                'Turquía':'🇹🇷','Ucrania':'🇺🇦','Egipto':'🇪🇬',
-                'Nigeria':'🇳🇬','Costa de Marfil':'🇨🇮','Paraguay':'🇵🇾',
-                'Bolivia':'🇧🇴','Chile':'🇨🇱','Perú':'🇵🇪',
-                'Venezuela':'🇻🇪','Costa Rica':'🇨🇷','Panamá':'🇵🇦',
-                'Honduras':'🇭🇳','Jamaica':'🇯🇲','Haití':'🇭🇹',
-                'El Salvador':'🇸🇻','Guatemala':'🇬🇹','Cuba':'🇨🇺',
-                'República Dominicana':'🇩🇴','República Checa':'🇨🇿',
-                'Grecia':'🇬🇷','Rumania':'🇷🇴','Hungría':'🇭🇺',
-                'Eslovaquia':'🇸🇰','Eslovenia':'🇸🇮','Albania':'🇦🇱',
-                'Georgia':'🇬🇪','Islandia':'🇮🇸','Irlanda':'🇮🇪',
-                'Finlandia':'🇫🇮','Israel':'🇮🇱','Argelia':'🇩🇿',
-                'Sudáfrica':'🇿🇦','Costa de Marfil':'🇨🇮',
-                'China':'🇨🇳','India':'🇮🇳','Indonesia':'🇮🇩',
-                'Iraq':'🇮🇶','Jordania':'🇯🇴',
+            // ── Cargar partidos desde Supabase ──────────────────
+            async loadMatches(showLoading = false) {
+                if (showLoading) {
+                    const list = document.getElementById('wc-matches-list');
+                    if (list && this.matches.length === 0) {
+                        list.innerHTML = `<div style="text-align:center;padding:40px 0;">
+                            <div style="width:32px;height:32px;border:3px solid rgba(16,185,129,0.3);border-top-color:#10b981;border-radius:50%;margin:0 auto 12px;animation:spin 0.8s linear infinite;"></div>
+                            <p style="font-size:10px;color:#555;font-weight:700;text-transform:uppercase;">Cargando partidos...</p>
+                        </div>`;
+                    }
+                }
+                const { data, error } = await sb
+                    .from('wc_matches')
+                    .select('*')
+                    .order('match_date', { ascending: true });
+
+                if (error) {
+                    const list = document.getElementById('wc-matches-list');
+                    if (list) list.innerHTML = `<div style="text-align:center;padding:40px;">
+                        <p style="font-size:11px;font-weight:900;color:#ef4444;text-transform:uppercase;">Error cargando partidos</p>
+                        <button onclick="WC.loadMatches(true)" style="margin-top:12px;padding:8px 16px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:#10b981;border-radius:8px;font-size:9px;font-weight:900;text-transform:uppercase;cursor:pointer;">Reintentar</button>
+                    </div>`;
+                    return;
+                }
+
+                this.matches = data || [];
+                this.renderFilters();
+                this.renderMatches();
+                this.checkBetResults();
             },
 
-            flag(name) { return (this.FLAG_MAP[name] || '🌍') + ' ' + name; },
-
-            phaseLabel(p) {
-                const r = (p||'').toLowerCase();
-                if (r.includes('grupo'))   return { label:'Grupos',   cls:'phase-group' };
-                if (r.includes('32avos') || r.includes('32')) return { label:'32avos', cls:'phase-oct' };
-                if (r.includes('octavos') || r.includes('16')) return { label:'Octavos', cls:'phase-oct' };
-                if (r.includes('cuartos')) return { label:'Cuartos',  cls:'phase-qtr' };
-                if (r.includes('semif'))   return { label:'Semis',    cls:'phase-semi' };
-                if (r.includes('3er') || r.includes('tercer')) return { label:'3er Lugar', cls:'phase-semi' };
-                if (r.includes('final'))   return { label:'Final',    cls:'phase-final' };
-                return { label: p||'Torneo', cls:'phase-group' };
+            // ── Subscripción Realtime (cambios del admin se ven al instante) ──
+            subscribeRealtime() {
+                sb.channel('wc_live')
+                    .on('postgres_changes', {
+                        event: '*',
+                        schema: 'public',
+                        table: 'wc_matches'
+                    }, (payload) => {
+                        // Actualizar el partido modificado en el array local
+                        const idx = this.matches.findIndex(m => m.id === payload.new?.id || m.id === payload.old?.id);
+                        if (payload.eventType === 'DELETE') {
+                            if (idx !== -1) this.matches.splice(idx, 1);
+                        } else if (payload.new) {
+                            if (idx !== -1) {
+                                this.matches[idx] = payload.new;
+                            } else {
+                                this.matches.push(payload.new);
+                            }
+                        }
+                        this.renderFilters();
+                        this.renderMatches();
+                        this.checkBetResults();
+                        // Notificar si un partido inicia en vivo
+                        if (payload.eventType === 'UPDATE' && payload.new.status === 'live' && payload.old?.status !== 'live') {
+                            playSfx('rocket');
+                            UI.notify(`⚽ ${payload.new.home} vs ${payload.new.away} — ¡EN VIVO!`, 'success');
+                        }
+                    })
+                    .subscribe();
             },
 
-            // ── init y polling ────────────────────────────────────────
+            // ── init ──
             init() {
                 if (!this.initialized) {
                     this.initialized = true;
                     this.loadLocalBets();
-                    // Polling cada 5s para detectar cambios del admin
-                    this._pollTimer = setInterval(() => this._poll(), 5000);
-                    // Escuchar cambios de localStorage (misma pestaña/otras pestañas)
-                    window.addEventListener('storage', (e) => {
-                        if (e.key === WCStore.KEY) this._applyMatches(WCStore.load());
-                    });
+                    this.loadMatches(true);
+                    this.subscribeRealtime();
                 }
                 this.setTab('partidos');
-                this._applyMatches(WCStore.load());
-            },
-
-            _poll() {
-                const raw = localStorage.getItem(WCStore.KEY) || '[]';
-                if (raw === this._lastHash) return;
-                this._lastHash = raw;
-                try { this._applyMatches(JSON.parse(raw)); } catch(e) {}
-            },
-
-            _applyMatches(newMatches) {
-                const changed = JSON.stringify(newMatches) !== JSON.stringify(this.matches);
-                this.matches = newMatches;
-                if (changed) {
-                    this.checkBetResults();
-                    if (this.activeTab === 'partidos') {
-                        this.renderFilters();
-                        this.renderMatches();
-                    }
-                }
             },
 
             setTab(tab) {
                 this.activeTab = tab;
                 ['partidos','mis'].forEach(t => {
-                    const el = document.getElementById(`wc-${t}`);
-                    const btn = document.getElementById(`wc-tab-${t}`);
-                    if (el) el.classList.toggle('hidden-view', t !== tab);
-                    if (btn) btn.classList.toggle('active', t === tab);
+                    document.getElementById(`wc-${t}`).classList.toggle('hidden-view', t !== tab);
+                    document.getElementById(`wc-tab-${t}`).classList.toggle('active', t === tab);
                 });
                 if (tab === 'mis') this.renderMyBets();
-                if (tab === 'partidos') { this.renderFilters(); this.renderMatches(); this.renderInlineTicket(); }
+                if (tab === 'partidos') { this.renderMatches(); this.renderInlineTicket(); }
             },
 
             renderFilters() {
-                const c = document.getElementById('wc-group-filters');
-                if (!c) return;
-                const liveCount = this.matches.filter(m => m.status === 'live').length;
-                const visible = this.matches.filter(m => m.status !== 'finished');
-                const phases = [...new Set(visible.map(m => m.phase).filter(Boolean))];
-                const filters = [
-                    { val:'all', label:'Todos' },
-                    ...(liveCount > 0 ? [{ val:'__live__', label:`🔴 En Vivo (${liveCount})` }] : []),
-                    { val:'__upcoming__', label:'Próximos' },
-                    ...phases.map(p => ({ val: p, label: this.phaseLabel(p).label }))
-                ];
-                c.innerHTML = filters.map(({ val, label }) => {
+                const container = document.getElementById('wc-group-filters');
+                if (!container) return;
+                const groups = ['Todos', ...new Set(
+                    this.matches.map(m => m.group_name).filter(Boolean).sort()
+                )];
+                container.innerHTML = groups.map(g => {
+                    const val = g === 'Todos' ? 'all' : g;
                     const active = this.currentFilter === val;
-                    const isLv = val === '__live__';
-                    return `<button onclick="WC.filterBy('${val}')" style="white-space:nowrap;padding:6px 14px;border-radius:99px;font-size:9px;font-weight:900;text-transform:uppercase;border:1px solid ${active?'var(--mx-green)':isLv?'rgba(239,68,68,0.4)':'rgba(255,255,255,0.1)'};background:${active?'var(--mx-green)':isLv?'rgba(239,68,68,0.08)':'rgba(255,255,255,0.03)'};color:${active?'black':isLv?'#f87171':'#888'};cursor:pointer;">${label}</button>`;
+                    return `<button onclick="WC.filterBy('${val}')" style="white-space:nowrap;padding:6px 14px;border-radius:99px;font-size:9px;font-weight:900;text-transform:uppercase;border:1px solid ${active?'var(--mx-green)':'rgba(255,255,255,0.1)'};background:${active?'var(--mx-green)':'rgba(255,255,255,0.03)'};color:${active?'black':'#888'};cursor:pointer;">${g === 'Todos' ? 'Todos' : 'Grupo ' + g}</button>`;
                 }).join('');
             },
 
-            filterBy(val) { this.currentFilter = val; this.renderFilters(); this.renderMatches(); },
+            filterBy(val) {
+                this.currentFilter = val;
+                this.renderFilters();
+                this.renderMatches();
+            },
 
             renderMatches() {
                 const list = document.getElementById('wc-matches-list');
                 if (!list) return;
-                // Solo mostrar partidos NO finalizados
-                let visible = this.matches.filter(m => m.status !== 'finished');
-                let filtered;
-                if      (this.currentFilter === '__live__')     filtered = visible.filter(m => m.status === 'live');
-                else if (this.currentFilter === '__upcoming__') filtered = visible.filter(m => m.status === 'upcoming');
-                else if (this.currentFilter === 'all')          filtered = visible;
-                else    filtered = visible.filter(m => m.phase === this.currentFilter);
+                // Ocultar los partidos FINISHED (ya resueltos)
+                const visible = (this.currentFilter === 'all'
+                    ? this.matches
+                    : this.matches.filter(m => m.group_name === this.currentFilter))
+                    .filter(m => m.status !== 'finished');
 
-                if (visible.length === 0) {
-                    list.innerHTML = `<div style="text-align:center;padding:48px 20px;"><div style="font-size:3.5rem;margin-bottom:16px;">⚽</div><p style="font-size:12px;font-weight:900;color:#aaa;text-transform:uppercase;margin-bottom:8px;">Sin partidos disponibles</p><p style="font-size:10px;color:#555;font-weight:600;">El administrador agregará los partidos próximamente.</p></div>`;
+                if (visible.length === 0 && this.matches.length > 0) {
+                    list.innerHTML = `<div style="text-align:center;padding:40px;"><div style="font-size:2.5rem;margin-bottom:10px;">⚽</div><p style="font-size:10px;font-weight:900;color:#555;text-transform:uppercase;">No hay partidos activos en este momento</p></div>`;
                     return;
                 }
-                if (filtered.length === 0) {
-                    list.innerHTML = `<p style="text-align:center;color:#555;font-size:10px;font-weight:700;text-transform:uppercase;padding:40px 0;">Sin partidos en este filtro</p>`;
-                    return;
-                }
-                // Ordenar: en vivo primero
-                const order = { live:0, upcoming:1 };
-                filtered = [...filtered].sort((a,b) => (order[a.status]||1) - (order[b.status]||1));
-                // Agrupar por fase
-                const byPhase = {};
-                filtered.forEach(m => { const k = m.phase||'Torneo'; if(!byPhase[k]) byPhase[k]=[]; byPhase[k].push(m); });
-                list.innerHTML = Object.entries(byPhase).map(([phase, ms]) => {
-                    const {label, cls} = this.phaseLabel(phase);
-                    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;margin-top:4px;"><span class="phase-badge ${cls}">${label}</span><div style="flex:1;height:1px;background:rgba(255,255,255,0.05);"></div></div>${ms.map(m => this.matchCard(m)).join('')}`;
+                if (this.matches.length === 0) return;
+
+                // Agrupar por grupo
+                const byGroup = {};
+                visible.forEach(m => {
+                    const key = m.group_name || 'General';
+                    if (!byGroup[key]) byGroup[key] = [];
+                    byGroup[key].push(m);
+                });
+
+                // Live primero dentro de cada grupo
+                Object.keys(byGroup).forEach(k => {
+                    byGroup[k].sort((a, b) => {
+                        const ord = { live: 0, upcoming: 1 };
+                        return (ord[a.status] ?? 1) - (ord[b.status] ?? 1);
+                    });
+                });
+
+                const phaseMap = { 'Grupos':'phase-group','Octavos':'phase-oct','Cuartos':'phase-qtr','Semifinal':'phase-semi','Final':'phase-final' };
+                list.innerHTML = Object.entries(byGroup).map(([group, matches]) => {
+                    const phCls = phaseMap[matches[0]?.phase] || 'phase-group';
+                    return `
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                        <span class="phase-badge ${phCls}">Grupo ${group}</span>
+                        <div style="flex:1;height:1px;background:rgba(255,255,255,0.05);"></div>
+                    </div>
+                    ${matches.map(m => this.matchCard(m)).join('')}`;
                 }).join('');
             },
 
             matchCard(m) {
-                const slip = this.slip[m.id], hasBet = !!slip;
-                const h1S = hasBet&&slip.pick==='1'?'selected':'';
-                const xS  = hasBet&&slip.pick==='X'?'selected':'';
-                const h2S = hasBet&&slip.pick==='2'?'selected':'';
+                const slip = this.slip[m.id];
+                const hasBet = !!slip;
+                const h1Sel = hasBet && slip.pick === '1' ? 'selected' : '';
+                const xSel  = hasBet && slip.pick === 'X' ? 'selected' : '';
+                const h2Sel = hasBet && slip.pick === '2' ? 'selected' : '';
                 const isLive = m.status === 'live';
-                const badge = isLive
-                    ? `<span style="font-size:8px;font-weight:900;color:#ef4444;display:flex;align-items:center;gap:4px;"><span class="live-pulse" style="width:6px;height:6px;background:#ef4444;border-radius:50%;display:inline-block;"></span>EN VIVO ${m.minute?m.minute+"'":''}  </span>`
-                    : `<span style="font-size:8px;color:#555;font-weight:700;">${m.date||''} ${m.time||''}</span>`;
-                const center = isLive
-                    ? `<div style="padding:5px 14px;background:rgba(239,68,68,0.12);border-radius:8px;border:1px solid rgba(239,68,68,0.3);min-width:54px;text-align:center;flex-shrink:0;"><span style="font-family:'Archivo Black',sans-serif;font-size:18px;color:white;letter-spacing:3px;">${m.scoreHome||0} - ${m.scoreAway||0}</span></div>`
-                    : `<div style="padding:5px 12px;background:rgba(255,255,255,0.04);border-radius:8px;border:1px solid rgba(255,255,255,0.06);flex-shrink:0;"><span style="font-family:'Archivo Black',sans-serif;font-size:11px;color:#444;">VS</span></div>`;
-                const btns = `<div style="display:flex;gap:8px;${isLive?'opacity:0.35;pointer-events:none;':''}">
-                    <div class="odd-btn ${h1S}" onclick="WC.togglePick('${m.id}','1','${(m.home||'').replace(/['"]/g,'')}',${m.homeOdd||2})"><span class="odd-label">1 Local</span><span class="odd-value">${(m.homeOdd||2).toFixed(2)}</span></div>
-                    <div class="odd-btn ${xS}"  onclick="WC.togglePick('${m.id}','X','Empate',${m.drawOdd||3.2})"><span class="odd-label">X Empate</span><span class="odd-value">${(m.drawOdd||3.2).toFixed(2)}</span></div>
-                    <div class="odd-btn ${h2S}" onclick="WC.togglePick('${m.id}','2','${(m.away||'').replace(/['"]/g,'')}',${m.awayOdd||3.5})"><span class="odd-label">2 Visitante</span><span class="odd-value">${(m.awayOdd||3.5).toFixed(2)}</span></div>
-                </div>`;
-                return `<div class="match-card ${hasBet?'has-bet':''}" id="mc-${m.id}">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">${badge}${isLive?'':''}</div>
+
+                const betInfo = hasBet
+                    ? `<div style="display:flex;align-items:center;gap:4px;margin-bottom:8px;"><span style="font-size:8px;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);color:#10b981;padding:3px 8px;border-radius:6px;font-weight:900;text-transform:uppercase;">✓ Tu pick: ${slip.label}</span></div>`
+                    : '';
+
+                return `
+                <div class="match-card ${hasBet ? 'has-bet' : ''}" id="mc-${m.id}">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                        <span style="font-size:8px;color:#555;font-weight:700;text-transform:uppercase;">${m.match_date || ''} · ${m.match_time || ''}${m.venue ? ' · '+m.venue : ''}</span>
+                        ${isLive
+                            ? `<span style="font-size:8px;font-weight:900;color:#ef4444;display:flex;align-items:center;gap:4px;"><span class="live-pulse" style="width:6px;height:6px;background:#ef4444;border-radius:50%;display:inline-block;"></span>EN VIVO ${m.minute ? m.minute+"'" : ''}</span>`
+                            : ''}
+                    </div>
+                    ${betInfo}
                     <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-                        <div style="flex:1;text-align:right;"><span style="font-size:11px;font-weight:900;color:white;line-height:1.4;">${m.home||''}</span></div>
-                        ${center}
-                        <div style="flex:1;"><span style="font-size:11px;font-weight:900;color:white;line-height:1.4;">${m.away||''}</span></div>
-                    </div>${btns}</div>`;
+                        <div style="flex:1;text-align:right;"><span style="font-size:12px;font-weight:900;color:white;">${m.home}</span></div>
+                        ${isLive
+                            ? `<div style="padding:5px 14px;background:rgba(239,68,68,0.12);border-radius:8px;border:1px solid rgba(239,68,68,0.3);min-width:56px;text-align:center;"><span style="font-family:'Archivo Black',sans-serif;font-size:18px;color:white;letter-spacing:4px;">${m.score_home ?? 0} - ${m.score_away ?? 0}</span></div>`
+                            : `<div style="padding:4px 10px;background:rgba(255,255,255,0.04);border-radius:8px;border:1px solid rgba(255,255,255,0.06);"><span style="font-family:'Archivo Black',sans-serif;font-size:11px;color:#444;">VS</span></div>`}
+                        <div style="flex:1;text-align:left;"><span style="font-size:12px;font-weight:900;color:white;">${m.away}</span></div>
+                    </div>
+                    <div style="display:flex;gap:8px;${isLive ? 'opacity:0.4;pointer-events:none;' : ''}">
+                        <div class="odd-btn ${h1Sel}" onclick="WC.togglePick('${m.id}','1','${m.home.replace(/'/g,"\\'")}',${m.home_odd})">
+                            <span class="odd-label">1 Local</span><span class="odd-value">${(m.home_odd||2).toFixed(2)}</span>
+                        </div>
+                        <div class="odd-btn ${xSel}" onclick="WC.togglePick('${m.id}','X','Empate',${m.draw_odd})">
+                            <span class="odd-label">X Empate</span><span class="odd-value">${(m.draw_odd||3.2).toFixed(2)}</span>
+                        </div>
+                        <div class="odd-btn ${h2Sel}" onclick="WC.togglePick('${m.id}','2','${m.away.replace(/'/g,"\\'")}',${m.away_odd})">
+                            <span class="odd-label">2 Visitante</span><span class="odd-value">${(m.away_odd||3.5).toFixed(2)}</span>
+                        </div>
+                    </div>
+                    ${isLive ? `<div style="text-align:center;margin-top:8px;font-size:9px;color:#ef4444;font-weight:700;text-transform:uppercase;">⚽ Partido en curso — apuestas cerradas</div>` : ''}
+                </div>`;
             },
 
             togglePick(matchId, pick, label, odd) {
                 playSfx('click');
                 const m = this.matches.find(x => x.id === matchId);
-                if (!m || m.status === 'finished') return;
-                if (this.slip[matchId]?.pick === pick) delete this.slip[matchId];
-                else this.slip[matchId] = { pick, label, odd, matchHome:m.home, matchAway:m.away };
+                if (!m || m.status === 'live' || m.status === 'finished') return;
+                if (this.slip[matchId] && this.slip[matchId].pick === pick) {
+                    delete this.slip[matchId];
+                } else {
+                    this.slip[matchId] = { pick, label, odd, matchHome: m.home, matchAway: m.away, date: m.match_date, time: m.match_time };
+                }
                 this.updateTicketCount();
                 const card = document.getElementById(`mc-${matchId}`);
-                if (card) { const d=document.createElement('div'); d.innerHTML=this.matchCard(m); card.replaceWith(d.firstElementChild); }
+                if (card) { const d = document.createElement('div'); d.innerHTML = this.matchCard(m); card.replaceWith(d.firstElementChild); }
                 this.renderInlineTicket();
             },
 
             updateTicketCount() {
-                const c = Object.keys(this.slip).length;
+                const count = Object.keys(this.slip).length;
                 const el = document.getElementById('wc-ticket-count');
-                if (el) el.innerText = c + (c===1?' selección':' selecciones');
+                if (el) el.innerText = count + (count === 1 ? ' selección' : ' selecciones');
             },
 
-            getTotalOdd() { return Object.values(this.slip).reduce((a,s)=>a*s.odd,1); },
+            getTotalOdd() {
+                return Object.values(this.slip).reduce((acc, s) => acc * s.odd, 1);
+            },
 
             updatePotential() {
-                const amt = parseFloat(document.getElementById('wc-bet-amount')?.value)||0;
-                const to = this.getTotalOdd();
-                const e1=document.getElementById('wc-total-odd'), e2=document.getElementById('wc-potential-win');
-                if(e1) e1.innerText=to.toFixed(2)+'x';
-                if(e2) e2.innerText=`$${(amt*to).toFixed(2)}`;
+                const amt = parseFloat(document.getElementById('wc-bet-amount')?.value) || 0;
+                const totalOdd = this.getTotalOdd();
+                const el1 = document.getElementById('wc-total-odd');
+                const el2 = document.getElementById('wc-potential-win');
+                if (el1) el1.innerText = totalOdd.toFixed(2) + 'x';
+                if (el2) el2.innerText = `$${(amt * totalOdd).toFixed(2)}`;
             },
 
             renderInlineTicket() {
                 const items = Object.entries(this.slip);
-                const se = document.getElementById('wc-slip-items');
-                if(se) se.innerHTML=items.map(([mid,s])=>`<div style="display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,0.3);border-radius:0.7rem;padding:8px 10px;margin-bottom:6px;"><div><span style="font-size:8px;color:#555;font-weight:700;display:block;">${s.matchHome} vs ${s.matchAway}</span><span style="font-size:10px;font-weight:900;color:white;">${s.label}</span></div><div style="display:flex;align-items:center;gap:8px;"><span style="font-family:'Archivo Black',sans-serif;color:#10b981;font-size:14px;">${s.odd.toFixed(2)}</span><button onclick="WC.removePick('${mid}')" style="color:#555;font-size:16px;background:none;border:none;cursor:pointer;line-height:1;">✕</button></div></div>`).join('');
+                const slipItemsEl = document.getElementById('wc-slip-items');
+                if (slipItemsEl) {
+                    slipItemsEl.innerHTML = items.map(([matchId, s]) => `
+                        <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,0.3);border-radius:0.7rem;padding:8px 10px;margin-bottom:6px;">
+                            <div>
+                                <span style="font-size:8px;color:#555;font-weight:700;display:block;">${s.matchHome} vs ${s.matchAway}</span>
+                                <span style="font-size:10px;font-weight:900;color:white;">${s.label}</span>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <span style="font-family:'Archivo Black',sans-serif;color:#10b981;font-size:14px;">${s.odd.toFixed(2)}</span>
+                                <button onclick="WC.removePick('${matchId}')" style="color:#555;font-size:16px;background:none;border:none;cursor:pointer;line-height:1;">✕</button>
+                            </div>
+                        </div>`).join('');
+                }
                 this.updateTicketCount();
                 this.updatePotential();
-                if(items.length>0){document.getElementById('wc-ticket-sheet').classList.add('sheet-open');document.getElementById('wc-ticket-overlay').classList.add('sheet-open');}
+                if (items.length > 0) {
+                    document.getElementById('wc-ticket-sheet').classList.add('sheet-open');
+                    document.getElementById('wc-ticket-overlay').classList.add('sheet-open');
+                }
             },
 
-            closeTicketModal() { document.getElementById('wc-ticket-sheet').classList.remove('sheet-open');document.getElementById('wc-ticket-overlay').classList.remove('sheet-open'); },
+            closeTicketModal() {
+                document.getElementById('wc-ticket-sheet').classList.remove('sheet-open');
+                document.getElementById('wc-ticket-overlay').classList.remove('sheet-open');
+            },
+
             renderSlip() { this.renderInlineTicket(); },
 
             removePick(matchId) {
                 delete this.slip[matchId];
-                const m = this.matches.find(x=>x.id===matchId);
-                if(m){const c=document.getElementById(`mc-${matchId}`);if(c){const d=document.createElement('div');d.innerHTML=this.matchCard(m);c.replaceWith(d.firstElementChild);}}
-                if(Object.keys(this.slip).length===0){this.closeTicketModal();this.updateTicketCount();}
+                const m = this.matches.find(x => x.id === matchId);
+                if (m) {
+                    const card = document.getElementById(`mc-${matchId}`);
+                    if (card) { const d = document.createElement('div'); d.innerHTML = this.matchCard(m); card.replaceWith(d.firstElementChild); }
+                }
+                if (Object.keys(this.slip).length === 0) { this.closeTicketModal(); this.updateTicketCount(); }
                 else this.renderInlineTicket();
             },
 
             clearSlip() {
-                const prev={...this.slip}; this.slip={};
-                this.closeTicketModal(); this.updateTicketCount();
-                Object.keys(prev).forEach(mid=>{const m=this.matches.find(x=>x.id===mid);if(m){const c=document.getElementById(`mc-${mid}`);if(c){const d=document.createElement('div');d.innerHTML=this.matchCard(m);c.replaceWith(d.firstElementChild);}}});
+                const prev = {...this.slip};
+                this.slip = {};
+                this.closeTicketModal();
+                this.updateTicketCount();
+                Object.keys(prev).forEach(matchId => {
+                    const m = this.matches.find(x => x.id === matchId);
+                    if (m) {
+                        const card = document.getElementById(`mc-${matchId}`);
+                        if (card) { const d = document.createElement('div'); d.innerHTML = this.matchCard(m); card.replaceWith(d.firstElementChild); }
+                    }
+                });
             },
 
             async placeBet() {
-                if(State.isProcessing) return;
-                const amt=parseFloat(document.getElementById('wc-bet-amount').value);
-                if(!amt||amt<10) return UI.notify("Apuesta mínima $10 MXN","error");
-                if(Object.keys(this.slip).length===0) return UI.notify("Agrega al menos un partido","error");
-                if(State.balance<amt) return UI.notify("Saldo insuficiente","error");
-                State.isProcessing=true;
-                try{
-                    const to=this.getTotalOdd(), pw=amt*to;
-                    const picks=Object.entries(this.slip).map(([id,s])=>({matchId:id,pick:s.pick,label:s.label,odd:s.odd,matchHome:s.matchHome,matchAway:s.matchAway}));
-                    await Core.updateBalanceDB(-amt); State.balance-=amt; UI.updateBalance();
-                    const b={id:`wc_${Date.now()}`,userId:State.user.id,amount:amt,totalOdd:to,potentialWin:pw,picks,status:'pending',created:new Date().toISOString()};
-                    let bets=JSON.parse(localStorage.getItem('wcBets')||'[]');bets.push(b);localStorage.setItem('wcBets',JSON.stringify(bets));
-                    await Core.recordHistory({user_id:State.user.id,type:'bets',amount:-amt,label:`⚽ MUNDIAL (${picks.length} PARTIDO${picks.length>1?'S':''}) @ ${to.toFixed(2)}x`,status:'pending'});
+                if (State.isProcessing) return;
+                const amt = parseFloat(document.getElementById('wc-bet-amount').value);
+                if (!amt || amt < 10) return UI.notify("Apuesta mínima $10 MXN", "error");
+                if (Object.keys(this.slip).length === 0) return UI.notify("Agrega al menos un partido", "error");
+                if (State.balance < amt) return UI.notify("Saldo insuficiente", "error");
+                State.isProcessing = true;
+                try {
+                    const totalOdd = this.getTotalOdd();
+                    const potentialWin = amt * totalOdd;
+                    const picks = Object.entries(this.slip).map(([id, s]) => ({
+                        matchId: id, pick: s.pick, label: s.label, odd: s.odd,
+                        matchHome: s.matchHome, matchAway: s.matchAway
+                    }));
+                    // Descontar saldo
+                    await Core.updateBalanceDB(-amt);
+                    State.balance -= amt;
+                    UI.updateBalance();
+                    // Guardar en Supabase (tabla wc_bets)
+                    const { error } = await sb.from('wc_bets').insert([{
+                        user_id: State.user.id,
+                        amount: amt,
+                        total_odd: totalOdd,
+                        potential_win: potentialWin,
+                        picks: picks,
+                        status: 'pending'
+                    }]);
+                    if (error) throw error;
+                    // Historial
+                    await Core.recordHistory({
+                        user_id: State.user.id, type: 'bets', amount: -amt,
+                        label: `⚽ MUNDIAL (${picks.length} PARTIDO${picks.length > 1 ? 'S' : ''}) @ ${totalOdd.toFixed(2)}x`,
+                        status: 'pending'
+                    });
                     playSfx('win');
-                    UI.notify(`✅ ¡Ticket apostado! Posible ganancia: $${pw.toFixed(2)}`,"success");
-                    document.getElementById('wc-bet-amount').value='';
-                    this.clearSlip(); this.setTab('mis');
-                }catch(e){UI.notify("Error al procesar apuesta","error");}
-                finally{State.isProcessing=false;}
+                    UI.notify(`✅ ¡Ticket apostado! Posible ganancia: $${potentialWin.toFixed(2)}`, "success");
+                    document.getElementById('wc-bet-amount').value = '';
+                    this.clearSlip();
+                    this.setTab('mis');
+                } catch(e) {
+                    UI.notify("Error al procesar apuesta: " + e.message, "error");
+                } finally { State.isProcessing = false; }
             },
 
-            loadLocalBets(){return JSON.parse(localStorage.getItem('wcBets')||'[]');},
+            loadLocalBets() { /* compatibilidad — ahora las apuestas van a Supabase */ },
 
-            // Liquidar apuestas cuando el admin marca resultado
+            // ── Verificar resultados cuando el admin marca un partido ──
             checkBetResults() {
-                if(!State.user) return;
-                let bets=JSON.parse(localStorage.getItem('wcBets')||'[]');
-                let changed=false;
-                bets=bets.map(b=>{
-                    if(b.userId!==State.user.id||b.status!=='pending') return b;
-                    // Verificar si todos los partidos de este ticket tienen resultado
-                    const allSettled=b.picks.every(p=>{
-                        const m=this.matches.find(x=>x.id===p.matchId);
-                        return m&&m.result;
-                    });
-                    if(!allSettled) return b;
-                    const allCorrect=b.picks.every(p=>{
-                        const m=this.matches.find(x=>x.id===p.matchId);
-                        return m&&m.result===p.pick;
-                    });
-                    b.status=allCorrect?'won':'lost'; changed=true;
-                    if(allCorrect){
-                        Core.updateBalanceDB(b.potentialWin);
-                        State.balance+=b.potentialWin; UI.updateBalance();
-                        setTimeout(()=>{playSfx('win');UI.notify(`🏆 ¡GANASTE $${b.potentialWin.toFixed(2)} del Mundial!`,"success");},800);
-                    } else {
-                        setTimeout(()=>{UI.notify(`❌ Tu ticket del Mundial no acertó`,"error");},800);
-                    }
-                    return b;
-                });
-                if(changed){localStorage.setItem('wcBets',JSON.stringify(bets));if(this.activeTab==='mis') this.renderMyBets();}
+                // No necesario en el cliente: el admin panel paga directamente
+                // Esto es solo para refrescar la UI de "Mis Apuestas"
+                if (this.activeTab === 'mis') this.renderMyBets();
             },
 
-            renderMyBets() {
-                const list=document.getElementById('wc-my-bets-list');
-                if(!list) return;
-                let bets=JSON.parse(localStorage.getItem('wcBets')||'[]').filter(b=>b.userId===State.user?.id).reverse();
-                if(bets.length===0){list.innerHTML=`<div style="text-align:center;padding:48px 0;"><div style="font-size:3rem;margin-bottom:12px;">📋</div><p style="color:#555;font-size:10px;font-weight:700;text-transform:uppercase;">Sin apuestas aún</p></div>`;return;}
-                list.innerHTML=bets.map(b=>{
-                    const sc=b.status==='won'?'#10b981':b.status==='lost'?'#ef4444':'#fbbf24';
-                    const st=b.status==='won'?'✅ GANADO':b.status==='lost'?'❌ PERDIDO':'⏳ PENDIENTE';
-                    const d=new Date(b.created);
-                    return `<div class="match-card ${b.status==='won'?'settled-win':b.status==='lost'?'settled-loss':'has-bet'}" style="margin-bottom:12px;">
+            async renderMyBets() {
+                const list = document.getElementById('wc-my-bets-list');
+                if (!list || !State.user) return;
+                list.innerHTML = `<div style="text-align:center;padding:20px;"><div style="width:24px;height:24px;border:2px solid rgba(16,185,129,0.3);border-top-color:#10b981;border-radius:50%;margin:0 auto;animation:spin 0.8s linear infinite;"></div></div>`;
+                const { data: bets } = await sb
+                    .from('wc_bets')
+                    .select('*')
+                    .eq('user_id', State.user.id)
+                    .order('created_at', { ascending: false });
+                if (!bets || bets.length === 0) {
+                    list.innerHTML = `<div style="text-align:center;padding:48px 0;"><div style="font-size:3rem;margin-bottom:12px;">📋</div><p style="color:#555;font-size:10px;font-weight:700;text-transform:uppercase;">Sin apuestas aún</p></div>`;
+                    return;
+                }
+                list.innerHTML = bets.map(b => {
+                    const sc = b.status === 'won' ? '#10b981' : b.status === 'lost' ? '#ef4444' : '#fbbf24';
+                    const st = b.status === 'won' ? '✅ GANADO' : b.status === 'lost' ? '❌ PERDIDO' : '⏳ PENDIENTE';
+                    const d  = new Date(b.created_at);
+                    const picks = b.picks || [];
+                    return `
+                    <div class="match-card ${b.status === 'won' ? 'settled-win' : b.status === 'lost' ? 'settled-loss' : 'has-bet'}" style="margin-bottom:12px;">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
                             <span style="font-size:8px;color:#555;font-weight:700;text-transform:uppercase;">${d.toLocaleDateString('es-MX')} ${d.toTimeString().slice(0,5)}</span>
                             <span style="font-size:9px;font-weight:900;color:${sc};text-transform:uppercase;">${st}</span>
                         </div>
-                        ${b.picks.map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
-                            <div><span style="font-size:8px;color:#555;font-weight:700;">${p.matchHome} vs ${p.matchAway}</span><div style="font-size:10px;font-weight:900;color:white;">${p.label}</div></div>
+                        ${picks.map(p => `
+                        <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
+                            <div>
+                                <span style="font-size:8px;color:#555;font-weight:700;">${p.matchHome} vs ${p.matchAway}</span>
+                                <div style="font-size:10px;font-weight:900;color:white;">${p.label}</div>
+                            </div>
                             <span style="font-family:'Archivo Black',sans-serif;color:#10b981;font-size:12px;">${p.odd.toFixed(2)}</span>
                         </div>`).join('')}
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.06);">
-                            <div><span style="font-size:8px;color:#555;font-weight:700;text-transform:uppercase;">Apostado</span><div style="font-family:'Archivo Black',sans-serif;color:white;font-size:14px;">$${b.amount.toFixed(2)}</div></div>
-                            <div style="text-align:right;"><span style="font-size:8px;color:#555;font-weight:700;text-transform:uppercase;">Cuota · Potencial</span><div style="font-family:'Archivo Black',sans-serif;color:${sc};font-size:14px;">${b.totalOdd.toFixed(2)}x · $${b.potentialWin.toFixed(2)}</div></div>
+                            <div>
+                                <span style="font-size:8px;color:#555;font-weight:700;text-transform:uppercase;">Apostado</span>
+                                <div style="font-family:'Archivo Black',sans-serif;color:white;font-size:14px;">$${(b.amount||0).toFixed(2)}</div>
+                            </div>
+                            <div style="text-align:right;">
+                                <span style="font-size:8px;color:#555;font-weight:700;text-transform:uppercase;">Cuota · Potencial</span>
+                                <div style="font-family:'Archivo Black',sans-serif;color:${sc};font-size:14px;">${(b.total_odd||1).toFixed(2)}x · $${(b.potential_win||0).toFixed(2)}</div>
+                            </div>
                         </div>
-                        ${b.status==='won'?`<div style="margin-top:8px;text-align:center;font-size:11px;font-weight:900;color:#10b981;background:rgba(16,185,129,0.08);padding:8px;border-radius:0.8rem;">🏆 GANASTE $${b.potentialWin.toFixed(2)}</div>`:''}
+                        ${b.status === 'won' ? `<div style="margin-top:8px;text-align:center;font-size:11px;font-weight:900;color:#10b981;background:rgba(16,185,129,0.08);padding:8px;border-radius:0.8rem;">🏆 GANASTE $${(b.potential_win||0).toFixed(2)}</div>` : ''}
                     </div>`;
                 }).join('');
             }
         };
 
-        // ================================================================
-        // PANEL DE ADMINISTRADOR
-        // ================================================================
-        const WCAdmin = {
-            isOpen: false,
-            editingId: null,
-
-            // ── Abrir panel (con contraseña) ─────────────────────────
-            open() {
-                const pw = prompt('🔐 Contraseña de administrador:');
-                if (pw !== ADMIN_PASSWORD) return alert('Contraseña incorrecta.');
-                this.isOpen = true;
-                this._render();
-                document.getElementById('wc-admin-overlay').classList.add('open');
-                document.getElementById('wc-admin-panel').classList.add('open');
-            },
-
-            close() {
-                this.isOpen = false;
-                this.editingId = null;
-                document.getElementById('wc-admin-overlay').classList.remove('open');
-                document.getElementById('wc-admin-panel').classList.remove('open');
-            },
-
-            _render() {
-                const matches = WCStore.load();
-                const pending  = matches.filter(m => m.status !== 'finished');
-                const finished = matches.filter(m => m.status === 'finished');
-                const panel = document.getElementById('wc-admin-body');
-                if (!panel) return;
-
-                panel.innerHTML = `
-                <!-- AGREGAR PARTIDO -->
-                <div style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.2);border-radius:1rem;padding:16px;margin-bottom:20px;">
-                    <h3 style="font-family:'Archivo Black',sans-serif;font-size:11px;color:#10b981;text-transform:uppercase;margin-bottom:14px;">➕ Agregar Partido</h3>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-                        <div>
-                            <label style="font-size:8px;color:#555;font-weight:700;text-transform:uppercase;display:block;margin-bottom:4px;">Equipo Local</label>
-                            <input id="adm-home" list="adm-teams" placeholder="Ej: México" style="width:100%;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 10px;color:white;font-size:11px;outline:none;box-sizing:border-box;">
-                        </div>
-                        <div>
-                            <label style="font-size:8px;color:#555;font-weight:700;text-transform:uppercase;display:block;margin-bottom:4px;">Equipo Visitante</label>
-                            <input id="adm-away" list="adm-teams" placeholder="Ej: Argentina" style="width:100%;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 10px;color:white;font-size:11px;outline:none;box-sizing:border-box;">
-                        </div>
-                    </div>
-                    <datalist id="adm-teams">${Object.keys(WC.FLAG_MAP).map(n=>`<option value="${n}">`).join('')}</datalist>
-                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
-                        <div>
-                            <label style="font-size:8px;color:#555;font-weight:700;text-transform:uppercase;display:block;margin-bottom:4px;">Fase</label>
-                            <select id="adm-phase" style="width:100%;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 6px;color:white;font-size:10px;outline:none;box-sizing:border-box;">
-                                <option>Grupo A</option><option>Grupo B</option><option>Grupo C</option>
-                                <option>Grupo D</option><option>Grupo E</option><option>Grupo F</option>
-                                <option>Grupo G</option><option>Grupo H</option><option>Grupo I</option>
-                                <option>Grupo J</option><option>Grupo K</option><option>Grupo L</option>
-                                <option>32avos de Final</option><option>Octavos de Final</option>
-                                <option>Cuartos de Final</option><option>Semifinal</option>
-                                <option>3er Lugar</option><option>Gran Final</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label style="font-size:8px;color:#555;font-weight:700;text-transform:uppercase;display:block;margin-bottom:4px;">Fecha</label>
-                            <input id="adm-date" type="date" style="width:100%;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 6px;color:white;font-size:10px;outline:none;box-sizing:border-box;color-scheme:dark;">
-                        </div>
-                        <div>
-                            <label style="font-size:8px;color:#555;font-weight:700;text-transform:uppercase;display:block;margin-bottom:4px;">Hora</label>
-                            <input id="adm-time" type="time" style="width:100%;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 6px;color:white;font-size:10px;outline:none;box-sizing:border-box;color-scheme:dark;">
-                        </div>
-                    </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
-                        <div>
-                            <label style="font-size:8px;color:#555;font-weight:700;text-transform:uppercase;display:block;margin-bottom:4px;">Cuota Local</label>
-                            <input id="adm-odd1" type="number" step="0.01" min="1" placeholder="2.00" style="width:100%;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 10px;color:white;font-size:11px;outline:none;box-sizing:border-box;">
-                        </div>
-                        <div>
-                            <label style="font-size:8px;color:#555;font-weight:700;text-transform:uppercase;display:block;margin-bottom:4px;">Cuota Empate</label>
-                            <input id="adm-oddX" type="number" step="0.01" min="1" placeholder="3.20" style="width:100%;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 10px;color:white;font-size:11px;outline:none;box-sizing:border-box;">
-                        </div>
-                        <div>
-                            <label style="font-size:8px;color:#555;font-weight:700;text-transform:uppercase;display:block;margin-bottom:4px;">Cuota Visitante</label>
-                            <input id="adm-odd2" type="number" step="0.01" min="1" placeholder="3.50" style="width:100%;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 10px;color:white;font-size:11px;outline:none;box-sizing:border-box;">
-                        </div>
-                    </div>
-                    <button onclick="WCAdmin.addMatch()" style="width:100%;padding:12px;background:linear-gradient(135deg,#10b981,#059669);color:black;border:none;border-radius:10px;font-family:'Archivo Black',sans-serif;font-size:11px;text-transform:uppercase;cursor:pointer;">✅ Agregar Partido</button>
-                </div>
-
-                <!-- PARTIDOS ACTIVOS -->
-                <h3 style="font-family:'Archivo Black',sans-serif;font-size:10px;color:#aaa;text-transform:uppercase;margin-bottom:12px;">Partidos Activos (${pending.length})</h3>
-                ${pending.length === 0
-                    ? '<p style="color:#555;font-size:10px;text-align:center;padding:20px 0;">Sin partidos. Agrega uno arriba.</p>'
-                    : pending.map(m => this._matchRow(m)).join('')}
-
-                <!-- PARTIDOS FINALIZADOS (colapsados) -->
-                ${finished.length > 0 ? `
-                <details style="margin-top:20px;">
-                    <summary style="font-family:'Archivo Black',sans-serif;font-size:10px;color:#555;text-transform:uppercase;cursor:pointer;margin-bottom:10px;">Finalizados (${finished.length})</summary>
-                    ${finished.map(m => this._matchRow(m)).join('')}
-                </details>` : ''}
-                `;
-            },
-
-            _matchRow(m) {
-                const isLive = m.status === 'live';
-                const isDone = m.status === 'finished';
-                const dt = m.date ? m.date + (m.time?' '+m.time:'') : '';
-                const statusTag = isLive
-                    ? `<span style="font-size:8px;font-weight:900;color:#ef4444;background:rgba(239,68,68,0.1);padding:2px 7px;border-radius:4px;">🔴 EN VIVO</span>`
-                    : isDone
-                    ? `<span style="font-size:8px;font-weight:900;color:#555;background:rgba(255,255,255,0.04);padding:2px 7px;border-radius:4px;">✅ FINAL</span>`
-                    : `<span style="font-size:8px;font-weight:900;color:#fbbf24;background:rgba(251,191,36,0.08);padding:2px 7px;border-radius:4px;">⏳ PRÓXIMO</span>`;
-
-                return `
-                <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:1rem;padding:14px;margin-bottom:10px;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                        <div>
-                            <span style="font-size:9px;color:#666;font-weight:700;">${m.phase||''} · ${dt}</span><br>
-                            <span style="font-size:12px;font-weight:900;color:white;">${m.home||''} <span style="color:#555;">vs</span> ${m.away||''}</span>
-                        </div>
-                        ${statusTag}
-                    </div>
-
-                    ${isLive ? `
-                    <!-- MARCADOR EN VIVO -->
-                    <div style="display:grid;grid-template-columns:1fr auto 1fr auto auto;gap:8px;align-items:center;margin-bottom:10px;">
-                        <input type="number" min="0" id="sc-h-${m.id}" value="${m.scoreHome||0}" style="background:rgba(0,0,0,0.4);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:8px;color:white;font-family:'Archivo Black',sans-serif;font-size:18px;text-align:center;outline:none;width:100%;box-sizing:border-box;">
-                        <span style="font-family:'Archivo Black',sans-serif;color:#555;font-size:18px;">-</span>
-                        <input type="number" min="0" id="sc-a-${m.id}" value="${m.scoreAway||0}" style="background:rgba(0,0,0,0.4);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:8px;color:white;font-family:'Archivo Black',sans-serif;font-size:18px;text-align:center;outline:none;width:100%;box-sizing:border-box;">
-                        <input type="number" min="0" max="120" id="sc-min-${m.id}" value="${m.minute||0}" placeholder="min" style="background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 6px;color:#ef4444;font-size:12px;font-weight:900;text-align:center;outline:none;width:54px;box-sizing:border-box;">
-                        <button onclick="WCAdmin.updateScore('${m.id}')" style="padding:8px 12px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#f87171;border-radius:8px;font-size:9px;font-weight:900;text-transform:uppercase;cursor:pointer;white-space:nowrap;">💾 Guardar</button>
-                    </div>
-                    <!-- FINALIZAR PARTIDO -->
-                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
-                        <button onclick="WCAdmin.finalize('${m.id}','1')" style="padding:10px 6px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:#10b981;border-radius:8px;font-size:9px;font-weight:900;text-transform:uppercase;cursor:pointer;">🏆 Gana Local</button>
-                        <button onclick="WCAdmin.finalize('${m.id}','X')" style="padding:10px 6px;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);color:#fbbf24;border-radius:8px;font-size:9px;font-weight:900;text-transform:uppercase;cursor:pointer;">🤝 Empate</button>
-                        <button onclick="WCAdmin.finalize('${m.id}','2')" style="padding:10px 6px;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);color:#60a5fa;border-radius:8px;font-size:9px;font-weight:900;text-transform:uppercase;cursor:pointer;">🏆 Gana Visit.</button>
-                    </div>` : ''}
-
-                    ${!isLive && !isDone ? `
-                    <!-- INICIAR EN VIVO -->
-                    <button onclick="WCAdmin.startLive('${m.id}')" style="width:100%;padding:10px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.4);color:#f87171;border-radius:8px;font-size:10px;font-weight:900;text-transform:uppercase;cursor:pointer;">▶️ Iniciar En Vivo</button>` : ''}
-
-                    ${isDone ? `<div style="text-align:center;font-size:10px;font-weight:900;color:#10b981;margin-top:4px;">Resultado: ${m.result==='1'?'Local':''}${m.result==='X'?'Empate':''}${m.result==='2'?'Visitante':''} · ${m.scoreHome} - ${m.scoreAway}</div>` : ''}
-
-                    <!-- ELIMINAR -->
-                    <button onclick="WCAdmin.deleteMatch('${m.id}')" style="width:100%;margin-top:8px;padding:7px;background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.15);color:#6b7280;border-radius:8px;font-size:9px;font-weight:700;text-transform:uppercase;cursor:pointer;">🗑️ Eliminar</button>
-                </div>`;
-            },
-
-            addMatch() {
-                const home  = document.getElementById('adm-home')?.value.trim();
-                const away  = document.getElementById('adm-away')?.value.trim();
-                const phase = document.getElementById('adm-phase')?.value;
-                const date  = document.getElementById('adm-date')?.value;
-                const time  = document.getElementById('adm-time')?.value;
-                const odd1  = parseFloat(document.getElementById('adm-odd1')?.value) || 2.00;
-                const oddX  = parseFloat(document.getElementById('adm-oddX')?.value) || 3.20;
-                const odd2  = parseFloat(document.getElementById('adm-odd2')?.value) || 3.50;
-                if (!home || !away) return alert('Completa los nombres de los equipos.');
-                if (home === away) return alert('Los equipos deben ser distintos.');
-
-                // Formatear fecha
-                let dateStr = '', timeStr = '';
-                if (date) {
-                    const d = new Date(date+'T12:00:00');
-                    const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-                    dateStr = `${months[d.getMonth()]} ${d.getDate()}`;
-                }
-                if (time) timeStr = time;
-
-                const newMatch = {
-                    id: WCStore.newId(),
-                    home: WC.flag(home),
-                    away: WC.flag(away),
-                    homeRaw: home, awayRaw: away,
-                    phase, date: dateStr, time: timeStr,
-                    homeOdd: odd1, drawOdd: oddX, awayOdd: odd2,
-                    status: 'upcoming',
-                    scoreHome: 0, scoreAway: 0,
-                    minute: 0, result: null
-                };
-                const matches = WCStore.load();
-                matches.push(newMatch);
-                WCStore.save(matches);
-                WC._applyMatches(matches);
-                this._render();
-            },
-
-            startLive(id) {
-                const matches = WCStore.load();
-                const m = matches.find(x => x.id === id);
-                if (!m) return;
-                m.status = 'live'; m.scoreHome = 0; m.scoreAway = 0; m.minute = 0;
-                WCStore.save(matches);
-                WC._applyMatches(matches);
-                this._render();
-            },
-
-            updateScore(id) {
-                const h   = parseInt(document.getElementById(`sc-h-${id}`)?.value)||0;
-                const a   = parseInt(document.getElementById(`sc-a-${id}`)?.value)||0;
-                const min = parseInt(document.getElementById(`sc-min-${id}`)?.value)||0;
-                const matches = WCStore.load();
-                const m = matches.find(x => x.id === id);
-                if (!m) return;
-                m.scoreHome = h; m.scoreAway = a; m.minute = min;
-                WCStore.save(matches);
-                WC._applyMatches(matches);
-                // Flash de confirmación
-                const btn = event?.target;
-                if(btn){const orig=btn.innerText;btn.innerText='✅ Guardado';btn.style.color='#10b981';setTimeout(()=>{btn.innerText=orig;btn.style.color='';},1500);}
-            },
-
-            finalize(id, result) {
-                const labels = {'1':'Local','X':'Empate','2':'Visitante'};
-                if (!confirm(`¿Marcar resultado: ${labels[result]}?\nEsto liquidará todas las apuestas de este partido.`)) return;
-                const matches = WCStore.load();
-                const m = matches.find(x => x.id === id);
-                if (!m) return;
-                // Asegurar marcador final coherente
-                const h = parseInt(document.getElementById(`sc-h-${id}`)?.value ?? m.scoreHome) || 0;
-                const a = parseInt(document.getElementById(`sc-a-${id}`)?.value ?? m.scoreAway) || 0;
-                m.scoreHome = h; m.scoreAway = a;
-                m.status = 'finished'; m.result = result; m.minute = 90;
-                WCStore.save(matches);
-                WC._applyMatches(matches);
-                // Liquidar apuestas de TODOS los usuarios (los que están logueados se liquidan en su próxima visita via checkBetResults)
-                // Las apuestas propias del admin se liquidan ahora
-                WC.checkBetResults();
-                this._render();
-            },
-
-            deleteMatch(id) {
-                if (!confirm('¿Eliminar este partido? Las apuestas pendientes quedarán sin resolver.')) return;
-                let matches = WCStore.load();
-                matches = matches.filter(x => x.id !== id);
-                WCStore.save(matches);
-                WC._applyMatches(matches);
-                this._render();
-            }
-        };
-
-
-                Core.init();
+        Core.init();
+        Core.init();
     </script>
 
     <div id="messenger-container" class="fixed bottom-24 right-6 z-[600] flex flex-col items-center gap-1">
@@ -1052,20 +862,5 @@
             }
         }, 300);
     </script>
-
-    <!-- ADMIN OVERLAY + PANEL -->
-    <div id="wc-admin-overlay" onclick="WCAdmin.close()"></div>
-    <div id="wc-admin-panel">
-        <div class="sheet-handle"></div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 16px 12px;">
-            <div>
-                <h2 style="font-family:'Archivo Black',sans-serif;font-size:14px;color:#10b981;text-transform:uppercase;">⚙️ Panel Admin</h2>
-                <p style="font-size:9px;color:#555;font-weight:700;text-transform:uppercase;">Mundial 2026 · Gestión de Partidos</p>
-            </div>
-            <button onclick="WCAdmin.close()" style="width:32px;height:32px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:50%;color:#888;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;">✕</button>
-        </div>
-        <div id="wc-admin-body" style="overflow-y:auto;flex:1;padding:0 16px;scrollbar-width:none;"></div>
-    </div>
-
 </body>
 </html>
