@@ -182,9 +182,33 @@
         </header>
 
         <div id="view-lobby" class="view-content p-5 space-y-6">
-            <div class="bg-gradient-to-br from-emerald-500 to-emerald-800 p-6 rounded-[2.2rem] shadow-xl">
-                <h2 class="text-2xl font-casino italic text-white">Suerte hoy</h2>
+
+            <!-- ── CARRUSEL HERO ── -->
+            <div style="position:relative;overflow:hidden;border-radius:2rem;">
+                <div id="hero-track" style="display:flex;transition:transform 0.5s cubic-bezier(0.4,0,0.2,1);will-change:transform;">
+                    <!-- Slide 1: Suerte hoy -->
+                    <div style="min-width:100%;background:linear-gradient(135deg,#10b981 0%,#059669 100%);padding:24px;border-radius:2rem;box-shadow:0 8px 32px rgba(16,185,129,0.3);">
+                        <p style="font-size:9px;font-weight:900;color:rgba(0,0,0,0.4);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px;">¡Bienvenido!</p>
+                        <h2 style="font-family:'Archivo Black',sans-serif;font-size:26px;color:black;text-transform:uppercase;letter-spacing:-0.5px;line-height:1.1;margin-bottom:12px;">Suerte<br>hoy 🍀</h2>
+                        <p style="font-size:10px;font-weight:700;color:rgba(0,0,0,0.55);">Juega responsablemente.</p>
+                    </div>
+                    <!-- Slide 2: Mundial 2026 -->
+                    <div onclick="Router.showView('mundial')" style="min-width:100%;background:linear-gradient(135deg,#003580 0%,#002060 40%,#8B0000 100%);padding:24px;border-radius:2rem;cursor:pointer;position:relative;overflow:hidden;box-shadow:0 8px 32px rgba(0,32,96,0.5);">
+                        <div style="position:absolute;right:-10px;top:-10px;font-size:5rem;opacity:0.12;transform:rotate(-20deg);">⚽</div>
+                        <div style="position:absolute;right:28px;bottom:-6px;font-size:3rem;opacity:0.15;">🏆</div>
+                        <p style="font-size:9px;font-weight:900;color:rgba(100,160,255,0.7);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px;">Apuestas Deportivas</p>
+                        <h2 style="font-family:'Archivo Black',sans-serif;font-size:24px;color:white;text-transform:uppercase;letter-spacing:-0.5px;line-height:1.1;margin-bottom:10px;">Mundial<br><span style="color:#fbbf24;">2026</span> 🇺🇸🇲🇽🇨🇦</h2>
+                        <p style="font-size:10px;font-weight:700;color:rgba(147,197,253,0.7);">Toca para apostar →</p>
+                    </div>
+                </div>
+                <!-- Dots -->
+                <div style="display:flex;justify-content:center;gap:6px;margin-top:10px;padding-bottom:2px;">
+                    <div id="hero-dot-0" style="width:20px;height:4px;border-radius:2px;background:#10b981;transition:all 0.3s;"></div>
+                    <div id="hero-dot-1" style="width:6px;height:4px;border-radius:2px;background:rgba(255,255,255,0.2);transition:all 0.3s;"></div>
+                </div>
             </div>
+
+            <!-- ── GRID DE JUEGOS ── -->
             <div class="grid grid-cols-2 gap-4">
                 <div onclick="Router.openGame('slots')" class="glass p-6 text-center active:scale-95 transition-transform cursor-pointer"><span class="text-4xl block mb-2">🎰</span><span class="font-casino text-[9px] text-zinc-500 tracking-widest">Slots</span></div>
                 <div onclick="Router.openGame('mines')" class="glass p-6 text-center active:scale-95 transition-transform cursor-pointer"><span class="text-4xl block mb-2">💣</span><span class="font-casino text-[9px] text-zinc-500 tracking-widest">Minas</span></div>
@@ -192,26 +216,16 @@
                 <div onclick="Router.openGame('tower')" class="glass p-6 text-center active:scale-95 transition-transform cursor-pointer"><span class="text-4xl block mb-2">🗼</span><span class="font-casino text-[9px] text-zinc-500 tracking-widest">Torre</span></div>
                 <div onclick="Router.openGame('blackjack')" class="glass p-6 text-center active:scale-95 transition-transform cursor-pointer"><span class="text-4xl block mb-2">🃏</span><span class="font-casino text-[9px] text-zinc-500 tracking-widest">Blackjack</span></div>
                 <div onclick="Router.openGame('chicken')" class="glass p-6 text-center active:scale-95 transition-transform cursor-pointer"><span class="text-4xl block mb-2">🐥</span><span class="font-casino text-[9px] text-zinc-500 tracking-widest">Chicken Road</span></div>
-                <div onclick="Router.showView('mundial')" class="col-span-2 active:scale-95 transition-transform cursor-pointer wc-header flex items-center gap-4 p-5" style="border-radius:1.5rem; margin-bottom: 8px;">
-                    <div>
-                        <span class="font-casino text-white text-lg italic tracking-tighter block leading-tight">Mundial <span class="text-yellow-400">2026</span></span>
-                        <span class="text-[9px] text-blue-300 font-bold uppercase tracking-widest">Apuestas Deportivas · En Vivo</span>
-                    </div>
-                    <div class="ml-auto flex gap-1 text-2xl">🇺🇸🇲🇽🇨🇦</div>
-                </div>
             </div>
         </div>
 
         <div id="view-mundial" class="view-content p-5 hidden-view">
-            <button onclick="Router.showView('lobby')" class="mb-4 text-zinc-600 text-[10px] font-bold uppercase flex items-center"><i class="fas fa-arrow-left mr-2"></i> Volver al Lobby</button>
             <div class="wc-header mb-5">
                 <div class="flex items-center gap-3">
                     <span class="text-3xl">🏆</span>
                     <div>
                         <h2 class="font-casino text-white text-xl italic">FIFA Mundial <span class="text-yellow-400">2026</span></h2>
-                        <p class="text-[9px] text-blue-300 font-bold uppercase tracking-widest">Datos en tiempo real · API-Football</p>
                     </div>
-                    <button onclick="WC.loadFixtures(true)" style="margin-left:auto;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:#10b981;border-radius:8px;padding:6px 10px;font-size:8px;font-weight:900;text-transform:uppercase;cursor:pointer;">🔄 Actualizar</button>
                 </div>
             </div>
 
