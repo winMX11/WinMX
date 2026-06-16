@@ -570,7 +570,8 @@
                         this.renderMatches();
                         this.checkBetResults();
                         // Notificar si un partido inicia en vivo
-                        if (payload.eventType === 'UPDATE' && payload.new.status === 'live' && payload.old?.status !== 'live') {
+                        // Notificación EN VIVO: solo cuando el admin activa el campo notify_live
+                        if (payload.eventType === 'UPDATE' && payload.new.notify_live === true) {
                             playSfx('rocket');
                             UI.notify(`⚽ ${payload.new.home} vs ${payload.new.away} — ¡EN VIVO!`, 'success');
                         }
