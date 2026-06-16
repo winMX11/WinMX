@@ -142,8 +142,9 @@
     <div class="login-box">
         <h1>WinMX</h1>
         <p>Panel de Administración</p>
-        <input id="admin-pass" type="password" placeholder="Contraseña de administrador" onkeydown="if(event.key==='Enter') Auth.login()">
-        <button class="btn-primary" onclick="Auth.login()">Ingresar al Panel</button>
+        <input id="admin-email" type="email" placeholder="Correo de administrador" onkeydown="if(event.key==='Enter') document.getElementById('admin-pass').focus()" autocomplete="username">
+        <input id="admin-pass" type="password" placeholder="Contraseña" onkeydown="if(event.key==='Enter') Auth.login()" autocomplete="current-password">
+        <button class="btn-primary" id="btn-admin-login" onclick="Auth.login()">Ingresar al Panel</button>
     </div>
 </div>
 
@@ -300,7 +301,10 @@
 <script>
 const DB = { url: "https://dakhnqriwbzihlzhtfcb.supabase.co", key: "sb_publishable_rRcNEvZ9n0IEJzTQcK90nQ_5lfwSDYs" };
 const sb = window.supabase.createClient(DB.url, DB.key);
-const ADMIN_PASS = "winmx2026admin"; // ← Cambia esta contraseña
+// La función "admin-login" corre en el servidor de Supabase y es la única
+// que sabe si un email+password corresponde a un admin real. Esta página
+// ya no contiene ninguna contraseña ni lógica de verificación.
+const ADMIN_LOGIN_URL = DB.url + "/functions/v1/admin-login";
 
 // ─── NOTIFICACIONES ───────────────────────────────────────────
 const notify = (msg, type = 'success') => {
@@ -313,20 +317,66 @@ const notify = (msg, type = 'success') => {
 
 // ─── AUTH ─────────────────────────────────────────────────────
 const Auth = {
-    login() {
+    async login() {
+        const email = document.getElementById('admin-email').value.trim();
         const pass = document.getElementById('admin-pass').value;
-        if (pass !== ADMIN_PASS) return notify('Contraseña incorrecta', 'error');
-        sessionStorage.setItem('admin_ok', '1');
-        document.getElementById('login-screen').style.display = 'none';
-        document.getElementById('app').style.display = 'block';
-        Admin.init();
+        if (!email || !pass) return notify('Ingresa correo y contraseña', 'error');
+
+        const btn = document.getElementById('btn-admin-login');
+        btn.disabled = true;
+        btn.innerText = 'Verificando...';
+
+        try {
+            const res = await fetch(ADMIN_LOGIN_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': DB.key,
+                    'Authorization': 'Bearer ' + DB.key
+                },
+                body: JSON.stringify({ email, password: pass })
+            });
+            const result = await res.json();
+
+            if (!res.ok) {
+                notify(result.error || 'No se pudo iniciar sesión', 'error');
+                btn.disabled = false;
+                btn.innerText = 'Ingresar al Panel';
+                return;
+            }
+
+            // Guardamos la sesión real de Supabase Auth (no un flag arbitrario).
+            // Esto hace que las peticiones a wc_matches / wc_bets vayan
+            // autenticadas como este usuario, y RLS pueda verificar is_admin().
+            const { error: setErr } = await sb.auth.setSession({
+                access_token: result.access_token,
+                refresh_token: result.refresh_token
+            });
+            if (setErr) {
+                notify('Error estableciendo sesión: ' + setErr.message, 'error');
+                btn.disabled = false;
+                btn.innerText = 'Ingresar al Panel';
+                return;
+            }
+
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+            Admin.init();
+        } catch (e) {
+            notify('Error de conexión: ' + e.message, 'error');
+            btn.disabled = false;
+            btn.innerText = 'Ingresar al Panel';
+        }
     },
-    logout() {
-        sessionStorage.removeItem('admin_ok');
+    async logout() {
+        await sb.auth.signOut();
         location.reload();
     },
-    check() {
-        if (sessionStorage.getItem('admin_ok') === '1') {
+    async check() {
+        // En vez de un flag en sessionStorage, revisamos si hay una
+        // sesión real y válida de Supabase Auth.
+        const { data: { session } } = await sb.auth.getSession();
+        if (session) {
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('app').style.display = 'block';
             Admin.init();
@@ -829,9 +879,6 @@ const Modal = {
 };
 
 // ─── START ────────────────────────────────────────────────────
-document.getElementById('admin-pass').addEventListener('keydown', e => {
-    if (e.key === 'Enter') Auth.login();
-});
 Auth.check();
 </script>
 </body>
