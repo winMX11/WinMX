@@ -360,9 +360,6 @@
 const DB = { url: "https://dakhnqriwbzihlzhtfcb.supabase.co", key: "sb_publishable_rRcNEvZ9n0IEJzTQcK90nQ_5lfwSDYs" };
 const sb = window.supabase.createClient(DB.url, DB.key);
 
-// LISTA DE ADMINS PERMITIDOS (correos)
-const ADMIN_EMAILS = ['daniel00998888@gmail.com']; // Agrega aquí tus emails de admin
-
 const notify = (msg, type = 'success') => {
     const n = document.createElement('div');
     n.className = `notif-item notif-${type}`;
@@ -383,15 +380,7 @@ const Auth = {
         btn.innerText = 'Verificando...';
 
         try {
-            // Verificar que sea un admin permitido
-            if (!ADMIN_EMAILS.includes(email)) {
-                notify('Acceso denegado - No eres administrador', 'error');
-                btn.disabled = false;
-                btn.innerText = 'Ingresar al Panel';
-                return;
-            }
-
-            // Intentar login con Supabase Auth
+            // 1. Intentar login con Supabase Auth
             const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
             
             if (error) {
@@ -401,13 +390,24 @@ const Auth = {
                 return;
             }
 
-            // Login exitoso
+            // 2. Verificar que sea admin en la tabla admins
+            const { data: adminCheck } = await sb.from('admins').select('*').eq('user_id', data.user.id).single();
+            
+            if (!adminCheck) {
+                await sb.auth.signOut();
+                notify('❌ Acceso denegado - No eres administrador', 'error');
+                btn.disabled = false;
+                btn.innerText = 'Ingresar al Panel';
+                return;
+            }
+
+            // 3. Es admin - cargar panel
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('app').style.display = 'block';
             Admin.init();
             notify('✅ Bienvenido al panel de admin', 'success');
         } catch (e) {
-            notify('Error de conexión: ' + e.message, 'error');
+            notify('Error: ' + e.message, 'error');
             btn.disabled = false;
             btn.innerText = 'Ingresar al Panel';
         }
