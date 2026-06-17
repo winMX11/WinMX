@@ -483,6 +483,8 @@ const Admin = {
     async init() {
         await this.loadMatches();
         await this.loadBets();
+        await this.loadUsers();
+        await this.loadHistory();
         this.subscribeRealtime();
         this.updateStats();
     },
@@ -680,9 +682,39 @@ const Admin = {
         }).join('');
     },
 
-    // ── Auto-refresh cada 15s (sin WebSocket para evitar errores de red) ──
+    // ── Realtime: actualiza cada sección al instante cuando hay cambios ──
     subscribeRealtime() {
-        setInterval(() => { this.loadMatches(); this.loadBets(); }, 15000);
+        // Partidos del Mundial (ya existía como polling; lo dejamos también
+        // en tiempo real por consistencia, además del refresco de partidos).
+        sb.channel('admin_wc_matches')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'wc_matches' }, () => {
+                this.loadMatches();
+            })
+            .subscribe();
+
+        // Apuestas — se actualiza la pestaña "Apuestas" y los contadores
+        // que dependen de ella (stats, picks pendientes en match cards).
+        sb.channel('admin_wc_bets')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'wc_bets' }, () => {
+                this.loadBets();
+            })
+            .subscribe();
+
+        // Usuarios — nuevos registros, cambios de saldo, o eliminaciones
+        // se reflejan al instante en la pestaña "Usuarios".
+        sb.channel('admin_usuarios')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'usuarios' }, () => {
+                this.loadUsers();
+            })
+            .subscribe();
+
+        // Historial — nuevos depósitos, retiros o jugadas aparecen al
+        // instante en la pestaña "Historial" sin recargar manualmente.
+        sb.channel('admin_history')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'history' }, () => {
+                this.loadHistory();
+            })
+            .subscribe();
     },
 
     // ── Stats ──
