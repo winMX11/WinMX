@@ -296,16 +296,7 @@
                 </div>
             </div>
 
-            <!-- API Key Banner (shown when key not configured) -->
-            <div id="api-key-banner">
-                <p style="font-size:9px;font-weight:900;color:#fbbf24;text-transform:uppercase;margin-bottom:8px;">⚠️ Configura tu API Key</p>
-                <p style="font-size:8px;color:#aaa;margin-bottom:10px;">Para ver partidos reales necesitas una API Key gratuita de <strong style="color:white;">api-football.com</strong> vía RapidAPI.</p>
-                <div style="display:flex;gap:8px;">
-                    <input id="api-key-input" type="text" placeholder="Pega aquí tu RapidAPI Key..." style="flex:1;background:rgba(0,0,0,0.4);border:1px solid rgba(251,191,36,0.3);border-radius:8px;padding:8px 10px;color:white;font-size:9px;outline:none;">
-                    <button onclick="WC.saveApiKey()" style="background:rgba(251,191,36,0.2);border:1px solid rgba(251,191,36,0.4);color:#fbbf24;border-radius:8px;padding:8px 14px;font-size:9px;font-weight:900;text-transform:uppercase;cursor:pointer;white-space:nowrap;">Guardar</button>
-                </div>
-                <a href="https://rapidapi.com/api-sports/api/api-football" target="_blank" style="font-size:8px;color:#10b981;display:block;margin-top:8px;text-decoration:underline;">→ Obtener API Key gratis (500 req/día)</a>
-            </div>
+
 
             <div style="display:flex; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08); border-radius:1rem; padding:6px; margin-bottom:20px;">
                 <div class="wc-tab active" id="wc-tab-partidos" onclick="WC.setTab('partidos')">⚽ Partidos</div>
@@ -412,7 +403,6 @@
                             <li>Registra la CLABE. Banco receptor: <strong>STP</strong>.</li>
                             <li>Concepto obligatorio: <strong class="text-white bg-white/10 px-1 rounded">transferencia</strong>.</li>
                             <li>Sube captura del comprobante.</li>
-                            <li>Espera aprobación del administrador (5 min – 24 hrs).</li>
                         </ol>
                     </div>
                     <div id="photo-section">
