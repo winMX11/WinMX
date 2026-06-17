@@ -138,11 +138,52 @@
         .filter-btn.active { border-color: var(--green); background: rgba(16,185,129,0.12); color: var(--green); }
 
         /* responsive */
+        @media(max-width: 1024px) {
+            .stats-row { grid-template-columns: repeat(3, 1fr); }
+        }
+
         @media(max-width: 768px) {
-            .stats-row { grid-template-columns: 1fr 1fr; }
+            .main { padding: 16px; }
+            .stats-row { grid-template-columns: 1fr 1fr; gap: 10px; }
+            .stat-card { padding: 14px 16px; }
+            .stat-card .value { font-size: 21px; }
+
+            .topbar { padding: 0 14px; height: auto; min-height: 54px; flex-wrap: wrap; gap: 8px; padding-top: 10px; padding-bottom: 10px; }
+            .topbar-logo { font-size: 13px; }
+            .topbar-badge { font-size: 8px; padding: 2px 7px; }
+            .topbar-right { width: 100%; flex-wrap: wrap; gap: 8px; margin-left: 0; }
+            .topbar-right .btn-sm { flex: 1; justify-content: center; display: flex; align-items: center; gap: 4px; }
+            .live-count { order: -1; }
+
+            .tabs { width: 100%; overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+            .tabs::-webkit-scrollbar { display: none; }
+            .tab { flex-shrink: 0; padding: 8px 14px; }
+
             .match-row { grid-template-columns: 1fr; gap: 10px; }
             .team-home, .team-away { text-align: left; }
-            .main { padding: 16px; }
+            .score-display { text-align: left; min-width: unset; }
+            .match-actions { min-width: unset; }
+            .actions-row { flex-wrap: wrap; }
+            .actions-row .score-input { width: 48px; flex-shrink: 0; }
+            .actions-row span { flex-shrink: 0; }
+            .actions-row .btn-sm { flex: 1; min-width: 90px; }
+
+            .modal-box { padding: 20px; width: calc(100vw - 32px); max-height: 90vh; overflow-y: auto; }
+            .form-row { grid-template-columns: 1fr; gap: 0; }
+            .form-row .form-group { margin-bottom: 16px; }
+
+            .bets-table, .users-table { font-size: 10px; }
+            .bets-table th, .users-table th { padding: 6px 8px; font-size: 8px; }
+            .bets-table td, .users-table td { padding: 8px; }
+            .search-input { max-width: 100%; }
+
+            .filter-row { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
+            .filter-btn { flex-shrink: 0; }
+        }
+
+        @media(max-width: 480px) {
+            .stats-row { grid-template-columns: 1fr 1fr; }
+            .topbar-logo { display: none; }
         }
     </style>
 </head>
