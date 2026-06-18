@@ -247,17 +247,20 @@
                             <p style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.95);">Apuestas 1X2 en vivo 🇺🇸🇲🇽🇨🇦 →</p>
                         </div>
                     </div>
-                    <!-- Slide 3: Promoción México vs Corea -->
-                    <div style="min-width:100%;background:linear-gradient(135deg,#7c2d12 0%,#b45309 50%,#f59e0b 100%);padding:32px 24px;border-radius:2rem;cursor:pointer;position:relative;overflow:hidden;box-shadow:0 12px 40px rgba(245,158,11,0.4);">
-                        <div style="position:absolute;right:-60px;top:-60px;font-size:200px;opacity:0.1;transform:rotate(-20deg);">🇲🇽</div>
-                        <div style="position:absolute;left:-40px;bottom:-40px;font-size:150px;opacity:0.08;">💰</div>
+                    <!-- Slide 3: Promo Bono México vs Corea -->
+                    <div style="min-width:100%;background:linear-gradient(135deg,#006847 0%,#004d34 40%,#ce1126 100%);padding:28px 24px;border-radius:2rem;position:relative;overflow:hidden;box-shadow:0 12px 40px rgba(0,104,71,0.5);">
+                        <div style="position:absolute;right:-30px;top:-30px;font-size:130px;opacity:0.12;">🇲🇽</div>
+                        <div style="position:absolute;left:-20px;bottom:-20px;font-size:100px;opacity:0.1;">💰</div>
                         <div style="position:relative;z-index:2;">
-                            <p style="font-size:10px;font-weight:900;color:rgba(255,255,255,0.9);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;">🎯 PROMOCIÓN ESPECIAL</p>
-                            <h2 style="font-family:'Archivo Black',sans-serif;font-size:28px;color:white;text-transform:uppercase;letter-spacing:-1px;line-height:1.2;margin-bottom:10px;font-weight:900;">¡Hoy Juega<br>MÉXICO!</h2>
-                            <p style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.95);margin-bottom:12px;">Tu primer depósito se duplica en bono 🚀</p>
+                            <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.15);border-radius:99px;padding:4px 12px;margin-bottom:10px;">
+                                <span style="width:7px;height:7px;background:#fbbf24;border-radius:50%;display:inline-block;animation:livePulse 1.2s infinite;"></span>
+                                <span style="font-size:9px;font-weight:900;color:white;text-transform:uppercase;letter-spacing:1px;">PROMOCIÓN HOY</span>
+                            </div>
+                            <h2 style="font-family:'Archivo Black',sans-serif;font-size:22px;color:white;text-transform:uppercase;line-height:1.1;margin-bottom:8px;">🇲🇽 México<br><span style="color:#fbbf24;">Doble Bono</span> 🚀</h2>
+                            <p style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.9);line-height:1.5;margin-bottom:14px;">Hoy juega la Selección. Haz tu primer depósito y <strong style="color:#fbbf24;">te lo duplicamos</strong> para apostar en México vs Corea del Sur.</p>
                             <div style="display:flex;gap:8px;">
-                                <button onclick="Modal.openBonusTC()" style="flex:1;background:rgba(255,255,255,0.25);border:1px solid rgba(255,255,255,0.5);color:white;padding:8px 12px;border-radius:8px;font-size:9px;font-weight:900;text-transform:uppercase;cursor:pointer;">📋 T&C</button>
-                                <button onclick="Router.showView('deposito')" style="flex:1;background:white;color:#7c2d12;border:none;padding:8px 12px;border-radius:8px;font-size:9px;font-weight:900;text-transform:uppercase;cursor:pointer;">💳 Depositar</button>
+                                <button onclick="BonoMundial.verTC(event)" style="flex:1;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:white;font-size:9px;font-weight:900;text-transform:uppercase;padding:9px 6px;border-radius:10px;cursor:pointer;letter-spacing:0.5px;">📋 Términos</button>
+                                <button onclick="UI.openModal('modal-deposit');UI.setTxType('deposit')" style="flex:2;background:linear-gradient(135deg,#fbbf24,#f59e0b);border:none;color:black;font-size:10px;font-weight:900;text-transform:uppercase;padding:9px 12px;border-radius:10px;cursor:pointer;letter-spacing:0.5px;">💳 Ir a Depositar →</button>
                             </div>
                         </div>
                     </div>
@@ -468,15 +471,91 @@
                     <span id="wc-potential-win" style="font-family:'Archivo Black',sans-serif; color:white; font-size:20px;">$0.00</span>
                 </div>
             </div>
+            <!-- Banner bono activo en ticket -->
+            <div id="wc-bono-banner" style="display:none;background:linear-gradient(135deg,rgba(0,104,71,0.2),rgba(206,17,38,0.12));border:1px solid rgba(251,191,36,0.4);border-radius:1rem;padding:12px 14px;margin-bottom:12px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                    <span style="font-size:1.2rem;">🎁</span>
+                    <div>
+                        <p style="font-size:9px;font-weight:900;color:#fbbf24;text-transform:uppercase;letter-spacing:0.5px;">Bono Activo</p>
+                        <p id="wc-bono-label" style="font-size:11px;font-weight:900;color:white;">Bono de $0 MXN activado</p>
+                    </div>
+                </div>
+                <p style="font-size:9px;color:#888;line-height:1.5;">El monto mínimo de apuesta con bono es el monto de tu bono. Las ganancias van directo a tu saldo.</p>
+            </div>
             <input id="wc-bet-amount" type="number" min="10" placeholder="Monto a apostar ($10 mín)" class="input-bet" oninput="WC.updatePotential()">
             <button onclick="WC.placeBet()" class="btn-action w-full py-4 font-casino text-lg" style="margin-bottom:10px;">⚽ APOSTAR TICKET</button>
             <button onclick="WC.clearSlip()" style="width:100%; font-size:9px; font-weight:900; color:#444; text-transform:uppercase; background:none; border:none; cursor:pointer; padding:4px;">Limpiar selecciones</button>
         </div>
     </div>
 
+    <!-- MODAL TÉRMINOS Y CONDICIONES BONO MUNDIAL -->
+    <div id="modal-bono-tc" class="fixed inset-0 bg-black/95 z-[300] hidden-view flex items-center justify-center p-6">
+        <div class="glass p-6 w-full max-w-sm bg-[#0a0a0a]" style="max-height:90dvh;overflow-y:auto;">
+            <div style="text-align:center;margin-bottom:20px;">
+                <div style="font-size:3rem;margin-bottom:8px;">🇲🇽⚽💰</div>
+                <h2 style="font-family:'Archivo Black',sans-serif;font-size:18px;color:#10b981;text-transform:uppercase;letter-spacing:-0.5px;">Bono de Duplicación</h2>
+                <p style="font-size:10px;color:#555;font-weight:700;text-transform:uppercase;margin-top:4px;">Términos y Condiciones</p>
+            </div>
+            <div style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.2);border-radius:1rem;padding:16px;margin-bottom:16px;">
+                <p style="font-size:11px;font-weight:900;color:#10b981;text-transform:uppercase;margin-bottom:8px;">📋 ¿Cómo funciona?</p>
+                <ol style="font-size:10px;color:#ccc;line-height:1.8;list-style:decimal;padding-left:16px;font-weight:600;">
+                    <li>Realiza tu <strong style="color:white;">primer depósito</strong> en WinMX.</li>
+                    <li>Una vez aprobado, recibes un <strong style="color:#fbbf24;">bono igual al monto depositado</strong>.</li>
+                    <li>El bono aparece en tu <strong style="color:white;">ticket de apuesta del Mundial</strong>.</li>
+                    <li>Apuesta en México vs Corea del Sur con ese bono.</li>
+                    <li>Si <strong style="color:#10b981;">ganas</strong>, la ganancia se acredita a tu saldo real y ya puedes retirar.</li>
+                </ol>
+            </div>
+            <div style="space-y:10px;">
+                <div style="background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.2);border-radius:0.8rem;padding:12px;margin-bottom:10px;">
+                    <p style="font-size:9px;font-weight:900;color:#fbbf24;text-transform:uppercase;margin-bottom:6px;">💡 Ejemplo práctico</p>
+                    <p style="font-size:10px;color:#ccc;line-height:1.6;">Si depositas <strong style="color:white;">$200 MXN</strong>, recibes un bono de <strong style="color:#fbbf24;">$200 MXN</strong> adicionales para apostar. El ticket mínimo con el bono es <strong style="color:white;">$200 MXN</strong>.</p>
+                </div>
+                <div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:0.8rem;padding:12px;margin-bottom:16px;">
+                    <p style="font-size:9px;font-weight:900;color:#ef4444;text-transform:uppercase;margin-bottom:6px;">⚠️ Restricciones</p>
+                    <ul style="font-size:10px;color:#ccc;line-height:1.8;list-style:disc;padding-left:14px;font-weight:500;">
+                        <li>Solo válido en el <strong style="color:white;">primer depósito</strong> por usuario.</li>
+                        <li>El bono <strong style="color:white;">no es retirable</strong>, solo apostable.</li>
+                        <li>El bono aplica únicamente para el partido <strong style="color:white;">México vs Corea del Sur</strong>.</li>
+                        <li>El monto mínimo apostable con el bono es el monto exacto del bono.</li>
+                        <li>Las ganancias generadas con el bono <strong style="color:#10b981;">sí son retirables</strong>.</li>
+                        <li>WinMX se reserva el derecho de cancelar el bono ante uso fraudulento.</li>
+                    </ul>
+                </div>
+            </div>
+            <button onclick="document.getElementById('modal-bono-tc').classList.add('hidden-view')" class="btn-action w-full py-4 font-casino">Entendido ✓</button>
+        </div>
+    </div>
+
+    <!-- MODAL BONO ACTIVADO (aparece cuando se aprueba el depósito) -->
+    <div id="modal-bono-activado" class="fixed inset-0 bg-black/95 z-[400] hidden-view flex items-center justify-center p-6">
+        <div class="glass p-8 w-full max-w-sm bg-[#0a0a0a] text-center animate__animated animate__zoomIn">
+            <div style="font-size:4rem;margin-bottom:12px;">🎉</div>
+            <h2 style="font-family:'Archivo Black',sans-serif;font-size:22px;color:#10b981;text-transform:uppercase;margin-bottom:8px;">¡Bono Activado!</h2>
+            <p style="font-size:13px;font-weight:700;color:#ccc;margin-bottom:4px;">Tu bono de duplicación está listo</p>
+            <div style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:1rem;padding:16px;margin:16px 0;">
+                <span style="font-size:9px;color:#555;font-weight:700;text-transform:uppercase;display:block;margin-bottom:4px;">Tu bono</span>
+                <span id="bono-activado-monto" style="font-family:'Archivo Black',sans-serif;font-size:36px;color:#fbbf24;">$0 MXN</span>
+            </div>
+            <p style="font-size:10px;color:#888;margin-bottom:20px;line-height:1.6;">Aparecerá en tu ticket de México vs Corea del Sur. ¡Úsalo para ganar!</p>
+            <button onclick="BonoMundial.irAApostar()" class="btn-action w-full py-4 font-casino text-lg">⚽ Ir a Apostarlo</button>
+        </div>
+    </div>
+
     <div id="modal-deposit" class="fixed inset-0 bg-black/95 z-[100] hidden-view flex items-center justify-center p-6">
         <div class="glass p-8 w-full max-w-sm bg-[#0a0a0a]">
             <div id="dep-step-1">
+                <!-- Banner promo bono en sección depósito -->
+                <div id="dep-bono-banner" style="background:linear-gradient(135deg,rgba(0,104,71,0.2),rgba(206,17,38,0.15));border:1px solid rgba(16,185,129,0.3);border-radius:1rem;padding:12px 14px;margin-bottom:16px;display:none;">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+                        <span style="font-size:1.4rem;">🇲🇽</span>
+                        <div>
+                            <p style="font-size:9px;font-weight:900;color:#10b981;text-transform:uppercase;letter-spacing:0.5px;">🔥 Promoción activa</p>
+                            <p style="font-size:10px;font-weight:700;color:white;line-height:1.4;">Primer depósito = Bono doble para México vs Corea</p>
+                        </div>
+                    </div>
+                    <button onclick="BonoMundial.verTC(event)" style="width:100%;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);color:#aaa;font-size:9px;font-weight:900;text-transform:uppercase;padding:7px;border-radius:8px;cursor:pointer;">📋 Ver Términos y Condiciones</button>
+                </div>
                 <div class="tx-selector">
                     <div id="tab-deposit" onclick="UI.setTxType('deposit')" class="tx-tab active">DEPOSITAR</div>
                     <div id="tab-withdrawal" onclick="UI.setTxType('withdrawal')" class="tx-tab">RETIRAR</div>
@@ -709,7 +788,11 @@
         // ──────────────────────────────────────────────────────────────
         const Core = {
             async init() { let p = 0; const i = setInterval(() => { p += 25; document.getElementById('boot-bar').style.width = `${p}%`; if(p >= 100) { clearInterval(i); this.check(); } }, 100); },
-            async check() { const { data: { session } } = await sb.auth.getSession(); document.getElementById('boot-loader').style.display = 'none'; if(session) { State.user = session.user; updateLastLogin(); startHeartbeat(); document.getElementById('main-app').classList.remove('hidden-view'); this.loadBalance(); this.subscribeBalance(); this.processPendingWins(); await BanGuard.checkExistingBan(); BanGuard.subscribeRealtime(); PresenceTracker.join(); // Procesar referido si el usuario llegó con ?ref= en la URL
+            async check() { const { data: { session } } = await sb.auth.getSession(); document.getElementById('boot-loader').style.display = 'none'; if(session) { State.user = session.user; updateLastLogin(); startHeartbeat(); document.getElementById('main-app').classList.remove('hidden-view'); this.loadBalance(); this.subscribeBalance(); this.processPendingWins(); await BanGuard.checkExistingBan(); BanGuard.subscribeRealtime(); PresenceTracker.join();
+                // Cargar bono mundial y suscribir a aprobación de depósito
+                await BonoMundial.cargar();
+                BonoMundial.subscribeDepositoAprobado();
+                // Procesar referido si el usuario llegó con ?ref= en la URL
                 setTimeout(() => Referidos.procesarReferidoSiExiste(), 1500);
             } else { document.getElementById('auth-view').classList.remove('hidden-view'); } },
             async loadBalance() { const { data } = await sb.from('usuarios').select('saldo').eq('id', State.user.id).maybeSingle(); State.balance = data ? data.saldo : 0; UI.updateBalance(); },
@@ -1013,9 +1096,16 @@
                 if (el2) el2.innerText = `$${(amt * totalOdd).toFixed(2)}`;
             },
 
+            openTicketSheet() {
+                document.getElementById('wc-ticket-sheet').classList.add('sheet-open');
+                document.getElementById('wc-ticket-overlay').classList.add('sheet-open');
+            },
+
             renderInlineTicket() {
                 const items = Object.entries(this.slip);
                 const slipItemsEl = document.getElementById('wc-slip-items');
+                // Actualizar UI del bono cada vez que se abre el ticket
+                if (typeof BonoMundial !== 'undefined') BonoMundial.actualizarUI();
                 if (slipItemsEl) {
                     slipItemsEl.innerHTML = items.map(([matchId, s]) => `
                         <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,0.3);border-radius:0.7rem;padding:8px 10px;margin-bottom:6px;">
@@ -1074,7 +1164,19 @@
                 const amt = parseFloat(document.getElementById('wc-bet-amount').value);
                 if (!amt || amt < 10) return UI.notify("Apuesta mínima $10 MXN", "error");
                 if (Object.keys(this.slip).length === 0) return UI.notify("Agrega al menos un partido", "error");
-                if (State.balance < amt) return UI.notify("Saldo insuficiente", "error");
+
+                // ── Validación del bono ──
+                const bono = BonoMundial.bono;
+                const usandoBono = bono && bono.status === 'active';
+                if (usandoBono && amt < bono.amount) {
+                    return UI.notify(`Con bono activo la apuesta mínima es $${bono.amount} MXN`, "error");
+                }
+                // Con bono no se descuenta el saldo, el bono cubre la apuesta
+                if (!usandoBono && State.balance < amt) return UI.notify("Saldo insuficiente", "error");
+                if (usandoBono && State.balance < (amt - bono.amount) && amt > bono.amount) {
+                    return UI.notify("Saldo insuficiente para cubrir el monto extra al bono", "error");
+                }
+
                 State.isProcessing = true;
                 try {
                     const totalOdd = this.getTotalOdd();
@@ -1083,10 +1185,21 @@
                         matchId: id, pick: s.pick, label: s.label, odd: s.odd,
                         matchHome: s.matchHome, matchAway: s.matchAway
                     }));
-                    // Descontar saldo
-                    await Core.updateBalanceDB(-amt);
-                    State.balance -= amt;
-                    UI.updateBalance();
+
+                    if (usandoBono) {
+                        // Solo descontar la diferencia si apostó más del bono
+                        const extra = amt - bono.amount;
+                        if (extra > 0) { await Core.updateBalanceDB(-extra); State.balance -= extra; UI.updateBalance(); }
+                        // Marcar bono como usado
+                        await sb.from('bonus_depositos').update({ status: 'used' }).eq('user_id', State.user.id).eq('status', 'active');
+                        BonoMundial.bono = null;
+                        BonoMundial.actualizarUI();
+                    } else {
+                        await Core.updateBalanceDB(-amt);
+                        State.balance -= amt;
+                        UI.updateBalance();
+                    }
+
                     // Guardar en Supabase (tabla wc_bets)
                     const { error } = await sb.from('wc_bets').insert([{
                         user_id: State.user.id,
@@ -1094,13 +1207,15 @@
                         total_odd: totalOdd,
                         potential_win: potentialWin,
                         picks: picks,
-                        status: 'pending'
+                        status: 'pending',
+                        used_bonus: usandoBono ? true : false,
+                        bonus_amount: usandoBono ? bono.amount : 0
                     }]);
                     if (error) throw error;
                     // Historial
                     await Core.recordHistory({
-                        user_id: State.user.id, type: 'bets', amount: -amt,
-                        label: `⚽ MUNDIAL (${picks.length} PARTIDO${picks.length > 1 ? 'S' : ''}) @ ${totalOdd.toFixed(2)}x`,
+                        user_id: State.user.id, type: 'bets', amount: -(usandoBono ? Math.max(0, amt - bono.amount) : amt),
+                        label: `⚽ MUNDIAL (${picks.length} PARTIDO${picks.length > 1 ? 'S' : ''}) @ ${totalOdd.toFixed(2)}x${usandoBono ? ' 🎁BONO' : ''}`,
                         status: 'pending'
                     });
                     playSfx('win');
@@ -1171,31 +1286,7 @@
         };
 
 
-        // ── CARRUSEL HERO (auto-gira cada 4s hacia la izquierda) ──
-        (function() {
-            let _slide = 0;
-            const _total = 2;
-            function _goTo(idx) {
-                _slide = idx;
-                const track = document.getElementById('hero-track');
-                if (!track) return;
-                track.style.transform = 'translateX(-' + (_slide * 100) + '%)';
-                for (let i = 0; i < _total; i++) {
-                    const dot = document.getElementById('hero-dot-' + i);
-                    if (!dot) continue;
-                    if (i === _slide) {
-                        dot.style.width = '20px';
-                        dot.style.background = '#10b981';
-                    } else {
-                        dot.style.width = '6px';
-                        dot.style.background = 'rgba(255,255,255,0.2)';
-                    }
-                }
-            }
-            setInterval(function() {
-                _goTo((_slide + 1) % _total);
-            }, 4000);
-        })();
+        // ── CARRUSEL HERO (auto-gira — desactivado, usa el bloque de abajo con 3 slides) ──
 
         // ── OTP EMAIL VERIFICATION ──────────────────────────────────────
         const OTPManager = {
@@ -1416,6 +1507,123 @@
                 AuthManager.switchTab('register');
             }
         })();
+
+        // ══════════════════════════════════════════════════════
+        // MÓDULO BONO MUNDIAL — México vs Corea del Sur
+        // ══════════════════════════════════════════════════════
+        const BonoMundial = {
+            bono: null, // { amount, status } — null = sin bono
+
+            // Cargar bono del usuario desde Supabase
+            async cargar() {
+                if (!State.user) return;
+                const { data } = await sb.from('bonus_depositos')
+                    .select('amount, status')
+                    .eq('user_id', State.user.id)
+                    .eq('status', 'active')
+                    .maybeSingle();
+                this.bono = data || null;
+                this.actualizarUI();
+            },
+
+            // Mostrar/ocultar banner y configurar input según bono
+            actualizarUI() {
+                const banner = document.getElementById('wc-bono-banner');
+                const label  = document.getElementById('wc-bono-label');
+                const input  = document.getElementById('wc-bet-amount');
+                const depBanner = document.getElementById('dep-bono-banner');
+
+                if (depBanner) depBanner.style.display = 'block'; // siempre mostrar en depósito si no tiene bono aún
+
+                if (this.bono && this.bono.status === 'active') {
+                    if (banner) banner.style.display = 'block';
+                    if (label)  label.innerText = `Bono de $${this.bono.amount.toFixed(2)} MXN activado 🎁`;
+                    if (input) {
+                        input.min   = this.bono.amount;
+                        input.value = this.bono.amount;
+                        input.placeholder = `Mínimo $${this.bono.amount} (bono activo)`;
+                    }
+                    if (depBanner) depBanner.style.display = 'none'; // ya tiene bono, ocultar en depósito
+                    WC.updatePotential();
+                } else {
+                    if (banner) banner.style.display = 'none';
+                    if (input) {
+                        input.min = 10;
+                        input.placeholder = 'Monto a apostar ($10 mín)';
+                    }
+                }
+            },
+
+            // Ver términos y condiciones
+            verTC(event) {
+                if (event) { event.stopPropagation(); event.preventDefault(); }
+                document.getElementById('modal-bono-tc').classList.remove('hidden-view');
+            },
+
+            // Ir a la sección mundial para apostar el bono
+            irAApostar() {
+                document.getElementById('modal-bono-activado').classList.add('hidden-view');
+                Router.showView('mundial');
+                setTimeout(() => WC.openTicketSheet && WC.openTicketSheet(), 400);
+            },
+
+            // Llamar cuando se aprueba un depósito (desde el admin o realtime)
+            async activarBono(montoDeposito) {
+                if (!State.user) return;
+                // Verificar que no tenga bono previo
+                const { data: existing } = await sb.from('bonus_depositos')
+                    .select('id').eq('user_id', State.user.id).maybeSingle();
+                if (existing) return; // ya usó su bono
+
+                const { error } = await sb.from('bonus_depositos').insert([{
+                    user_id: State.user.id,
+                    amount:  montoDeposito,
+                    status:  'active'
+                }]);
+                if (error) { console.error('Error activando bono:', error); return; }
+
+                // Marcar en usuarios que ya usó el bono de primer depósito
+                await sb.from('usuarios').update({ has_used_first_deposit_bonus: true }).eq('id', State.user.id);
+
+                this.bono = { amount: montoDeposito, status: 'active' };
+                this.actualizarUI();
+
+                // Mostrar modal de felicitación
+                const el = document.getElementById('bono-activado-monto');
+                if (el) el.innerText = `$${montoDeposito.toFixed(2)} MXN`;
+                document.getElementById('modal-bono-activado').classList.remove('hidden-view');
+                playSfx('win');
+            },
+
+            // Escuchar en realtime cuando el admin aprueba el depósito
+            subscribeDepositoAprobado() {
+                if (!State.user) return;
+                sb.channel('dep_aprobado_' + State.user.id.slice(0,8))
+                    .on('postgres_changes', {
+                        event: 'UPDATE',
+                        schema: 'public',
+                        table: 'history',
+                        filter: `user_id=eq.${State.user.id}`
+                    }, async (payload) => {
+                        // Cuando el admin aprueba el depósito cambia status a 'completed'
+                        if (payload.new &&
+                            payload.new.type === 'deposits' &&
+                            payload.new.status === 'completed' &&
+                            payload.old?.status === 'pending') {
+                            // Verificar si es el primer depósito y no tiene bono aún
+                            const { data: yaUsoBono } = await sb.from('usuarios')
+                                .select('has_used_first_deposit_bonus')
+                                .eq('id', State.user.id).maybeSingle();
+                            if (!yaUsoBono?.has_used_first_deposit_bonus) {
+                                const montoDeposito = Math.abs(payload.new.amount);
+                                await this.activarBono(montoDeposito);
+                            }
+                        }
+                    })
+                    .subscribe();
+            }
+        };
+        // ══════════════════════════════════════════════════════
 
         Core.init();
     </script>
