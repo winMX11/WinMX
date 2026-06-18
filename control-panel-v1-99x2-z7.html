@@ -143,7 +143,25 @@
         }
 
         // ── Verificar si este es el primer depósito aprobado del usuario ──
+        // FIX: usamos el flag explícito has_used_first_deposit_bonus en la tabla
+        // "usuarios" como fuente principal de verdad (más robusto que contar
+        // registros de "history"), y además checamos esto SIEMPRE ANTES de marcar
+        // el depósito actual como 'completed' para no contaminar el resultado.
         async function esPrimerDeposito(userId) {
+            // 1) Fuente principal: el flag explícito del usuario
+            const { data: userData, error: userErr } = await sb
+                .from('usuarios')
+                .select('has_used_first_deposit_bonus')
+                .eq('id', userId)
+                .maybeSingle();
+
+            if (!userErr && userData) {
+                if (userData.has_used_first_deposit_bonus === true) return false;
+            }
+
+            // 2) Respaldo: revisar si ya tiene depósitos completados previos
+            //    (excluyendo cualquier posibilidad de contar el actual, ya que
+            //    esta función SIEMPRE se llama antes de marcarlo como completed)
             const { data, error } = await sb
                 .from('history')
                 .select('id')
@@ -152,7 +170,6 @@
                 .eq('status', 'completed')
                 .limit(1);
             if (error) return false;
-            // Si no tiene ningún depósito completado anterior, es el primero
             return !data || data.length === 0;
         }
 
@@ -189,6 +206,18 @@
             const isDeposit = currentType === 'deposits';
             if (!confirm(`¿Deseas ${isDeposit ? "aprobar este depósito" : "confirmar que ya enviaste el retiro"}?`)) return;
 
+            // ── FIX PRINCIPAL ──────────────────────────────────────────
+            // Antes este chequeo se hacía DESPUÉS de marcar el historial como
+            // 'completed', por lo que esPrimerDeposito() siempre encontraba el
+            // registro recién marcado y devolvía false. Ahora se calcula
+            // ANTES de tocar el historial, así el primer depósito sí se
+            // detecta correctamente y el bono se activa.
+            let esPrimero = false;
+            if (isDeposit) {
+                esPrimero = await esPrimerDeposito(userId);
+            }
+            // ─────────────────────────────────────────────────────────────
+
             const newSaldo = isDeposit ? (currentSaldo + amount) : currentSaldo;
 
             const { error: errSaldo } = await sb.from('usuarios').update({ saldo: newSaldo }).eq('id', userId);
@@ -198,15 +227,10 @@
             }).eq('id', historyId);
 
             if (!errSaldo && !errHist) {
-                // ── BONO MUNDIAL: si es depósito, verificar si es el primero y activar bono ──
-                if (isDeposit) {
-                    const esPrimero = await esPrimerDeposito(userId);
-                    if (esPrimero) {
-                        await activarBonoMundial(userId, amount);
-                        alert(`✅ Depósito aprobado.\n🎁 Bono de $${amount} MXN activado automáticamente para el usuario.`);
-                    } else {
-                        alert("Transacción finalizada con éxito.");
-                    }
+                // ── BONO MUNDIAL: si es depósito y es el primero, activar bono ──
+                if (isDeposit && esPrimero) {
+                    await activarBonoMundial(userId, amount);
+                    alert(`✅ Depósito aprobado.\n🎁 Bono de $${amount} MXN activado automáticamente para el usuario.`);
                 } else {
                     alert("Transacción finalizada con éxito.");
                 }
