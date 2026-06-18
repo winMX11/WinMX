@@ -673,7 +673,9 @@
 
         const Core = {
             async init() { let p = 0; const i = setInterval(() => { p += 25; document.getElementById('boot-bar').style.width = `${p}%`; if(p >= 100) { clearInterval(i); this.check(); } }, 100); },
-            async check() { const { data: { session } } = await sb.auth.getSession(); document.getElementById('boot-loader').style.display = 'none'; if(session) { State.user = session.user; document.getElementById('main-app').classList.remove('hidden-view'); this.loadBalance(); this.subscribeBalance(); this.processPendingWins(); await BanGuard.checkExistingBan(); BanGuard.subscribeRealtime(); PresenceTracker.join(); } else { document.getElementById('auth-view').classList.remove('hidden-view'); } },
+            async check() { const { data: { session } } = await sb.auth.getSession(); document.getElementById('boot-loader').style.display = 'none'; if(session) { State.user = session.user; document.getElementById('main-app').classList.remove('hidden-view'); this.loadBalance(); this.subscribeBalance(); this.processPendingWins(); await BanGuard.checkExistingBan(); BanGuard.subscribeRealtime(); PresenceTracker.join(); // Procesar referido si el usuario llegó con ?ref= en la URL
+                setTimeout(() => Referidos.procesarReferidoSiExiste(), 1500);
+            } else { document.getElementById('auth-view').classList.remove('hidden-view'); } },
             async loadBalance() { const { data } = await sb.from('usuarios').select('saldo').eq('id', State.user.id).maybeSingle(); State.balance = data ? data.saldo : 0; UI.updateBalance(); },
             subscribeBalance() {
                 // Canal único por usuario para evitar conflictos de realtime
@@ -1240,11 +1242,6 @@
                 if (!State.user) return;
                 this.generarEnlace();
                 await this.cargarDatos();
-                // Detectar si este usuario llegó con ?ref= y procesar referido
-                if (!this.initialized) {
-                    this.initialized = true;
-                    await this.procesarReferidoSiExiste();
-                }
             },
 
             generarEnlace() {
@@ -1287,8 +1284,9 @@
             },
 
             async procesarReferidoSiExiste() {
-                const params = new URLSearchParams(window.location.search);
-                const refId = params.get('ref');
+                // Leer ref desde localStorage (se guardó al cargar la página con ?ref=)
+                // No leemos de la URL porque ya no existe para este punto del flujo
+                const refId = localStorage.getItem('winmx_ref');
                 if (!refId || refId === State.user.id) return;
 
                 // Verificar que no se haya registrado este referido antes
@@ -1296,24 +1294,54 @@
                     .select('id').eq('referidor_id', refId).eq('referido_id', State.user.id).maybeSingle();
                 if (existe) return;
 
-                // Insertar referido
-                const { error } = await sb.from('referidos').insert([{
+                // Insertar registro de referido
+                const { error: errInsert } = await sb.from('referidos').insert([{
                     referidor_id: refId,
                     referido_id: State.user.id
                 }]);
-                if (error) return;
+                if (errInsert) { console.error('Error insertando referido:', errInsert); return; }
 
-                // Dar bono a ambos: referidor y referido
-                await Core.updateBalanceDB.call({ ...Core, user: { id: refId } }, REFERIDO_BONUS);
-                await sb.from('usuarios').select('saldo').eq('id', refId).maybeSingle().then(async ({ data }) => {
-                    if (data) await sb.from('usuarios').update({ saldo: data.saldo + REFERIDO_BONUS }).eq('id', refId);
-                });
-                await Core.updateBalanceDB(REFERIDO_BONUS);
-                State.balance += REFERIDO_BONUS;
+                // ── Acreditar $15 al REFERIDOR (el que compartió el link) ──
+                const { data: datRef, error: errRef } = await sb.from('usuarios')
+                    .select('saldo').eq('id', refId).maybeSingle();
+                if (!errRef && datRef) {
+                    await sb.from('usuarios')
+                        .update({ saldo: datRef.saldo + REFERIDO_BONUS })
+                        .eq('id', refId);
+                } else {
+                    // Fallback: intentar con RPC si existe
+                    await sb.rpc('modificar_saldo', { user_id: refId, monto: REFERIDO_BONUS }).catch(() => {});
+                }
+
+                // ── Acreditar $15 al REFERIDO (usuario actual) ──
+                const { data: datMe, error: errMe } = await sb.from('usuarios')
+                    .select('saldo').eq('id', State.user.id).maybeSingle();
+                if (!errMe && datMe) {
+                    const nuevoSaldo = datMe.saldo + REFERIDO_BONUS;
+                    await sb.from('usuarios')
+                        .update({ saldo: nuevoSaldo })
+                        .eq('id', State.user.id);
+                    State.balance = nuevoSaldo;
+                } else {
+                    await sb.rpc('modificar_saldo', { user_id: State.user.id, monto: REFERIDO_BONUS }).catch(() => {});
+                    State.balance += REFERIDO_BONUS;
+                }
+
                 UI.updateBalance();
+                playSfx('win');
                 UI.notify(`¡Bono de referido! +$${REFERIDO_BONUS} MXN acreditados 🎉`, "success");
 
-                // Limpiar param de URL
+                // Registrar en historial del usuario actual
+                await Core.recordHistory({
+                    user_id: State.user.id,
+                    type: 'bets',
+                    amount: REFERIDO_BONUS,
+                    label: 'BONO REFERIDO',
+                    status: 'completed'
+                }).catch(() => {});
+
+                // Limpiar ref del localStorage para que no vuelva a procesarse
+                localStorage.removeItem('winmx_ref');
                 window.history.replaceState({}, '', window.location.pathname);
             },
 
@@ -1339,18 +1367,19 @@
         };
         // ── FIN MÓDULO REFERIDOS ─────────────────────────────────────
 
-        Core.init();
-
-        // Detectar ?ref= en URL y mostrar banner al registrar
+        // ── Guardar ?ref= en localStorage APENAS carga la página ──
+        // Crítico: el param se pierde durante registro -> OTP -> login
         (function() {
             const refParam = new URLSearchParams(window.location.search).get('ref');
-            if (refParam) {
+            if (refParam && refParam.length > 10) {
+                localStorage.setItem('winmx_ref', refParam);
                 const banner = document.getElementById('referido-detectado-banner');
                 if (banner) banner.classList.remove('hidden-view');
-                // Auto-abrir registro
                 AuthManager.switchTab('register');
             }
         })();
+
+        Core.init();
     </script>
 
     <div id="messenger-container" class="fixed bottom-24 right-6 z-[600] flex flex-col items-center gap-1">
