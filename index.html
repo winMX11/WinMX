@@ -690,6 +690,25 @@
             setInterval(() => {
                 if (State.user) updateLastLogin();
             }, 60000); // Cada minuto (60000ms)
+            
+            // Detectar cuando la página pierde foco
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden && State.user) {
+                    updateLastLogin(); // Actualizar al minimizar/cerrar
+                }
+            });
+            
+            // Actualizar antes de cerrar la página
+            window.addEventListener('beforeunload', async () => {
+                if (State.user) {
+                    try {
+                        const now = new Date();
+                        await sb.from('usuarios').update({
+                            last_seen: now.toISOString()
+                        }).eq('id', State.user.id);
+                    } catch(e) {}
+                }
+            });
         }
         // ──────────────────────────────────────────────────────────────
         const Core = {
