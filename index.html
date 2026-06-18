@@ -1714,20 +1714,22 @@
 })();
 
         setInterval(() => {
-            const container = document.getElementById('messenger-container');
-            if (!container) return;
-            const authView = document.getElementById('auth-view');
-            const modalDep = document.getElementById('modal-deposit');
-            const viewGame = document.getElementById('view-game');
-            const isVisible = (el) => el && !el.classList.contains('hidden-view');
-            const ticketSheet = document.getElementById('wc-ticket-sheet');
-            const ticketOpen = ticketSheet && ticketSheet.classList.contains('sheet-open');
-            if (isVisible(authView) || isVisible(modalDep) || isVisible(viewGame) || ticketOpen) {
-                container.style.setProperty('display', 'none', 'important');
-            } else {
-                container.style.setProperty('display', 'flex', 'important');
-            }
-        }, 300);
+    const container = document.getElementById('messenger-container');
+    if (!container) return;
+    const authView = document.getElementById('auth-view');
+    const modalDep = document.getElementById('modal-deposit');
+    const viewGame = document.getElementById('view-game');
+    const modalBonoTC = document.getElementById('modal-bono-tc');
+    const modalBonoActivado = document.getElementById('modal-bono-activado');
+    const isVisible = (el) => el && !el.classList.contains('hidden-view');
+    const ticketSheet = document.getElementById('wc-ticket-sheet');
+    const ticketOpen = ticketSheet && ticketSheet.classList.contains('sheet-open');
+    if (isVisible(authView) || isVisible(modalDep) || isVisible(viewGame) || isVisible(modalBonoTC) || isVisible(modalBonoActivado) || ticketOpen) {
+        container.style.setProperty('display', 'none', 'important');
+    } else {
+        container.style.setProperty('display', 'flex', 'important');
+    }
+}, 300);
     </script>
 </body>
 </html>
