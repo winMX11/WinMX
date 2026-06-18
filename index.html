@@ -1512,9 +1512,9 @@
         // MÓDULO BONO MUNDIAL — México vs Corea del Sur
         // ══════════════════════════════════════════════════════
         const BonoMundial = {
-            bono: null, // { amount, status } — null = sin bono
+            bono: null,
 
-            // Cargar bono del usuario desde Supabase
+            // Cargar bono activo desde bonus_depositos
             async cargar() {
                 if (!State.user) return;
                 const { data } = await sb.from('bonus_depositos')
@@ -1526,98 +1526,78 @@
                 this.actualizarUI();
             },
 
-            // Mostrar/ocultar banner y configurar input según bono
+            // Mostrar/ocultar banner y configurar input
             actualizarUI() {
-                const banner = document.getElementById('wc-bono-banner');
-                const label  = document.getElementById('wc-bono-label');
-                const input  = document.getElementById('wc-bet-amount');
+                const banner    = document.getElementById('wc-bono-banner');
+                const label     = document.getElementById('wc-bono-label');
+                const input     = document.getElementById('wc-bet-amount');
                 const depBanner = document.getElementById('dep-bono-banner');
-
-                if (depBanner) depBanner.style.display = 'block'; // siempre mostrar en depósito si no tiene bono aún
 
                 if (this.bono && this.bono.status === 'active') {
                     if (banner) banner.style.display = 'block';
                     if (label)  label.innerText = `Bono de $${this.bono.amount.toFixed(2)} MXN activado 🎁`;
-                    if (input) {
-                        input.min   = this.bono.amount;
-                        input.value = this.bono.amount;
-                        input.placeholder = `Mínimo $${this.bono.amount} (bono activo)`;
-                    }
-                    if (depBanner) depBanner.style.display = 'none'; // ya tiene bono, ocultar en depósito
+                    if (input)  { input.min = this.bono.amount; input.value = this.bono.amount; input.placeholder = `Mínimo $${this.bono.amount} (bono activo)`; }
+                    if (depBanner) depBanner.style.display = 'none';
                     WC.updatePotential();
                 } else {
                     if (banner) banner.style.display = 'none';
-                    if (input) {
-                        input.min = 10;
-                        input.placeholder = 'Monto a apostar ($10 mín)';
-                    }
+                    if (input)  { input.min = 10; input.placeholder = 'Monto a apostar ($10 mín)'; }
+                    if (depBanner) depBanner.style.display = 'block';
                 }
             },
 
-            // Ver términos y condiciones
             verTC(event) {
                 if (event) { event.stopPropagation(); event.preventDefault(); }
                 document.getElementById('modal-bono-tc').classList.remove('hidden-view');
             },
 
-            // Ir a la sección mundial para apostar el bono
             irAApostar() {
                 document.getElementById('modal-bono-activado').classList.add('hidden-view');
                 Router.showView('mundial');
-                setTimeout(() => WC.openTicketSheet && WC.openTicketSheet(), 400);
+                setTimeout(() => { this.actualizarUI(); WC.openTicketSheet && WC.openTicketSheet(); }, 400);
             },
 
-            // Llamar cuando se aprueba un depósito (desde el admin o realtime)
-            async activarBono(montoDeposito) {
-                if (!State.user) return;
-                // Verificar que no tenga bono previo
-                const { data: existing } = await sb.from('bonus_depositos')
-                    .select('id').eq('user_id', State.user.id).maybeSingle();
-                if (existing) return; // ya usó su bono
-
-                const { error } = await sb.from('bonus_depositos').insert([{
-                    user_id: State.user.id,
-                    amount:  montoDeposito,
-                    status:  'active'
-                }]);
-                if (error) { console.error('Error activando bono:', error); return; }
-
-                // Marcar en usuarios que ya usó el bono de primer depósito
-                await sb.from('usuarios').update({ has_used_first_deposit_bonus: true }).eq('id', State.user.id);
-
-                this.bono = { amount: montoDeposito, status: 'active' };
-                this.actualizarUI();
-
-                // Mostrar modal de felicitación
+            mostrarModal(monto) {
                 const el = document.getElementById('bono-activado-monto');
-                if (el) el.innerText = `$${montoDeposito.toFixed(2)} MXN`;
+                if (el) el.innerText = `$${parseFloat(monto).toFixed(2)} MXN`;
                 document.getElementById('modal-bono-activado').classList.remove('hidden-view');
                 playSfx('win');
             },
 
-            // Escuchar en realtime cuando el admin aprueba el depósito
+            // ── SUSCRIPCIÓN PRINCIPAL: escucha bonus_depositos directamente ──
+            // Cuando el admin aprueba el depósito e inserta el bono en la tabla,
+            // el usuario lo ve al instante sin depender de history ni filtros complejos.
             subscribeDepositoAprobado() {
                 if (!State.user) return;
-                sb.channel('dep_aprobado_' + State.user.id.slice(0,8))
+                const chName = 'bono_' + State.user.id.replace(/-/g,'').slice(0,12);
+                sb.channel(chName)
+                    .on('postgres_changes', {
+                        event: 'INSERT',
+                        schema: 'public',
+                        table: 'bonus_depositos'
+                    }, async (payload) => {
+                        if (payload.new?.user_id !== State.user.id) return;
+                        if (payload.new?.status !== 'active') return;
+                        this.bono = { amount: payload.new.amount, status: 'active' };
+                        this.actualizarUI();
+                        this.mostrarModal(payload.new.amount);
+                    })
+                    .subscribe();
+
+                // ── FALLBACK: también escucha usuarios para cuando el admin
+                //    actualiza has_used_first_deposit_bonus = true en la misma acción ──
+                const chName2 = 'bonousr_' + State.user.id.replace(/-/g,'').slice(0,10);
+                sb.channel(chName2)
                     .on('postgres_changes', {
                         event: 'UPDATE',
                         schema: 'public',
-                        table: 'history',
-                        filter: `user_id=eq.${State.user.id}`
-                    }, async (payload) => {
-                        // Cuando el admin aprueba el depósito cambia status a 'completed'
-                        if (payload.new &&
-                            payload.new.type === 'deposits' &&
-                            payload.new.status === 'completed' &&
-                            payload.old?.status === 'pending') {
-                            // Verificar si es el primer depósito y no tiene bono aún
-                            const { data: yaUsoBono } = await sb.from('usuarios')
-                                .select('has_used_first_deposit_bonus')
-                                .eq('id', State.user.id).maybeSingle();
-                            if (!yaUsoBono?.has_used_first_deposit_bonus) {
-                                const montoDeposito = Math.abs(payload.new.amount);
-                                await this.activarBono(montoDeposito);
-                            }
+                        table: 'usuarios',
+                        filter: `id=eq.${State.user.id}`
+                    }, async () => {
+                        // Recargar bono por si acaso se activó y aún no lo tenemos
+                        if (!this.bono) {
+                            await this.cargar();
+                            if (this.bono) this.mostrarModal(this.bono.amount);
                         }
                     })
                     .subscribe();
