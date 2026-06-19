@@ -258,13 +258,20 @@ const AdminSupport = {
         };
 
         function changeView(type) {
-            currentType = type;
-            document.getElementById('btn-dep').classList.toggle('tab-active', type === 'deposits');
-            document.getElementById('btn-dep').classList.toggle('text-zinc-500', type !== 'deposits');
-            document.getElementById('btn-with').classList.toggle('tab-active', type === 'withdrawals');
-            document.getElementById('btn-with').classList.toggle('text-zinc-500', type !== 'withdrawals');
-            loadPending();
-        }
+    currentType = type;
+    document.getElementById('btn-dep').classList.toggle('tab-active', type === 'deposits');
+    document.getElementById('btn-dep').classList.toggle('text-zinc-500', type !== 'deposits');
+    document.getElementById('btn-with').classList.toggle('tab-active', type === 'withdrawals');
+    document.getElementById('btn-with').classList.toggle('text-zinc-500', type !== 'withdrawals');
+    document.getElementById('btn-support').classList.toggle('tab-active', type === 'support');
+    document.getElementById('btn-support').classList.toggle('text-zinc-500', type !== 'support');
+
+    document.getElementById('pending-list').classList.toggle('hidden-view', type === 'support');
+    document.getElementById('support-panel').classList.toggle('hidden-view', type !== 'support');
+
+    if (type === 'support') { AdminSupport.loadConversations(); }
+    else { loadPending(); }
+}
 
         async function loadPending() {
             const isDeposit = currentType === 'deposits';
