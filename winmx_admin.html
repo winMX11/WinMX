@@ -3,872 +3,435 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WinMX Admin — Mundial 2026</title>
+    <title>Panel de Control | WinMX Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        :root {
-            --green: #10b981; --dark: #0a0a0a; --card: #111;
-            --border: rgba(255,255,255,0.08); --red: #ef4444;
-            --yellow: #fbbf24; --blue: #3b82f6;
-        }
-        body { background: var(--dark); color: #fff; font-family: 'Inter', system-ui, sans-serif; min-height: 100vh; }
-        #login-screen { position: fixed; inset: 0; background: #000; display: flex; align-items: center; justify-content: center; z-index: 1000; }
-        .login-box { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 40px; width: 340px; text-align: center; }
-        .login-box h1 { font-size: 22px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; color: var(--green); margin-bottom: 6px; }
-        .login-box p { font-size: 10px; color: #555; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 28px; }
-        .login-box input { width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 10px; padding: 14px; color: #fff; font-size: 14px; outline: none; margin-bottom: 14px; }
-        .login-box input:focus { border-color: rgba(16,185,129,0.4); }
-        .btn-primary { background: linear-gradient(135deg, var(--green), #059669); color: #000; font-weight: 900; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; border: none; border-radius: 10px; padding: 14px 24px; cursor: pointer; width: 100%; transition: opacity 0.2s; }
-        .btn-primary:hover { opacity: 0.85; }
-        #app { display: none; }
-        .topbar { background: #000; border-bottom: 1px solid var(--border); padding: 0 28px; height: 58px; display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 100; }
-        .topbar-logo { font-size: 16px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; color: var(--green); }
-        .topbar-badge { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3); color: var(--green); font-size: 9px; font-weight: 900; padding: 3px 10px; border-radius: 99px; text-transform: uppercase; }
-        .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
-        .live-count { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); color: var(--red); font-size: 9px; font-weight: 900; padding: 3px 10px; border-radius: 99px; display: flex; align-items: center; gap: 5px; }
-        .live-dot { width: 6px; height: 6px; background: var(--red); border-radius: 50%; animation: blink 1.2s infinite; }
-        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
-        .main { padding: 24px 28px; max-width: 1200px; margin: 0 auto; }
-        .stats-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; margin-bottom: 24px; }
-        .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; }
-        .stat-card .label { font-size: 9px; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
-        .stat-card .value { font-size: 26px; font-weight: 900; color: #fff; }
-        .stat-card .value.green { color: var(--green); }
-        .stat-card .value.red { color: var(--red); }
-        .stat-card .value.yellow { color: var(--yellow); }
-        .tabs { display: flex; gap: 4px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 10px; padding: 4px; margin-bottom: 20px; width: fit-content; }
-        .tab { padding: 8px 18px; border-radius: 7px; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; color: #555; transition: all 0.2s; }
-        .tab.active { background: var(--green); color: #000; }
-        .section-title { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; color: #555; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
-        .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-        .match-grid { display: flex; flex-direction: column; gap: 10px; }
-        .match-row { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; display: grid; grid-template-columns: 1fr auto 1fr auto; align-items: center; gap: 16px; transition: border-color 0.2s; }
-        .match-row.live { border-color: rgba(239,68,68,0.4); background: linear-gradient(135deg, rgba(239,68,68,0.05) 0%, var(--card) 100%); }
-        .match-row.finished { border-color: rgba(255,255,255,0.04); opacity: 0.6; }
-        .team-name { font-size: 13px; font-weight: 800; }
-        .team-home { text-align: right; }
-        .team-away { text-align: left; }
-        .score-display { text-align: center; min-width: 80px; }
-        .score-nums { font-size: 22px; font-weight: 900; letter-spacing: 4px; color: #fff; font-family: monospace; }
-        .match-meta { font-size: 9px; color: #555; font-weight: 700; text-transform: uppercase; margin-top: 3px; }
-        .match-status-badge { font-size: 8px; font-weight: 900; padding: 2px 8px; border-radius: 5px; text-transform: uppercase; }
-        .badge-upcoming { background: rgba(59,130,246,0.12); color: var(--blue); border: 1px solid rgba(59,130,246,0.3); }
-        .badge-live { background: rgba(239,68,68,0.12); color: var(--red); border: 1px solid rgba(239,68,68,0.3); animation: blink 1.2s infinite; }
-        .badge-finished { background: rgba(255,255,255,0.05); color: #666; border: 1px solid var(--border); }
-        .badge-won { background: rgba(16,185,129,0.12); color: var(--green); border: 1px solid rgba(16,185,129,0.3); }
-        .match-actions { display: flex; flex-direction: column; gap: 6px; min-width: 220px; }
-        .actions-row { display: flex; gap: 6px; }
-        .btn-sm { padding: 6px 12px; border-radius: 7px; font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.3px; border: none; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
-        .btn-live { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4); color: var(--red); }
-        .btn-live:hover { background: rgba(239,68,68,0.25); }
-        .btn-green { background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.4); color: var(--green); }
-        .btn-green:hover { background: rgba(16,185,129,0.25); }
-        .btn-yellow { background: rgba(251,191,36,0.15); border: 1px solid rgba(251,191,36,0.4); color: var(--yellow); }
-        .btn-yellow:hover { background: rgba(251,191,36,0.25); }
-        .btn-gray { background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: #888; }
-        .btn-gray:hover { background: rgba(255,255,255,0.1); }
-        .btn-danger { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4); color: var(--red); }
-        .score-input { width: 44px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 6px 8px; color: #fff; font-size: 14px; font-weight: 900; text-align: center; outline: none; }
-        .score-input:focus { border-color: rgba(16,185,129,0.5); }
-        .result-btns { display: flex; gap: 4px; }
-        .btn-result { flex: 1; padding: 6px 4px; border-radius: 6px; font-size: 10px; font-weight: 900; text-align: center; cursor: pointer; border: 1px solid var(--border); background: rgba(255,255,255,0.03); color: #666; transition: all 0.2s; }
-        .btn-result:hover { border-color: rgba(255,255,255,0.2); color: #fff; }
-        .btn-result.win1 { background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.4); color: var(--green); }
-        .btn-result.draw { background: rgba(251,191,36,0.15); border-color: rgba(251,191,36,0.4); color: var(--yellow); }
-        .btn-result.win2 { background: rgba(59,130,246,0.15); border-color: rgba(59,130,246,0.4); color: var(--blue); }
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(6px); z-index: 500; display: none; align-items: center; justify-content: center; }
-        .modal-overlay.open { display: flex; }
-        .modal-box { background: #111; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 28px; width: 440px; max-width: 95vw; }
-        .modal-box h3 { font-size: 14px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; }
-        .modal-box h3 span { color: var(--green); }
-        .form-group { margin-bottom: 16px; }
-        .form-group label { display: block; font-size: 9px; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
-        .form-group input, .form-group select { width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: #fff; font-size: 13px; outline: none; }
-        .form-group input:focus, .form-group select:focus { border-color: rgba(16,185,129,0.4); }
-        .form-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-        .modal-footer { display: flex; gap: 10px; margin-top: 20px; }
-        .modal-footer button { flex: 1; }
-        .bets-table { width: 100%; border-collapse: collapse; }
-        .bets-table th { font-size: 9px; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
-        .bets-table td { padding: 10px 12px; font-size: 11px; border-bottom: 1px solid rgba(255,255,255,0.03); vertical-align: top; }
-        .bets-table tr:hover td { background: rgba(255,255,255,0.02); }
-        .users-table { width: 100%; border-collapse: collapse; }
-        .users-table th { font-size: 9px; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
-        .users-table td { padding: 10px 12px; font-size: 11px; border-bottom: 1px solid rgba(255,255,255,0.03); vertical-align: middle; }
-        .users-table tr:hover td { background: rgba(255,255,255,0.02); }
-        .search-input { width: 100%; max-width: 320px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; color: #fff; font-size: 12px; outline: none; margin-bottom: 16px; }
-        .search-input:focus { border-color: rgba(16,185,129,0.4); }
-        .warning-box { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.35); border-radius: 10px; padding: 14px; margin-bottom: 16px; font-size: 11px; color: #fca5a5; line-height: 1.6; }
-        .modal-box textarea { width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: #fff; font-size: 13px; outline: none; resize: vertical; min-height: 90px; font-family: inherit; }
-        .modal-box textarea:focus { border-color: rgba(16,185,129,0.4); }
-        #notif { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
-        .notif-item { padding: 12px 18px; border-radius: 10px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; animation: slideIn 0.3s ease; min-width: 260px; }
-        .notif-success { background: var(--green); color: #000; }
-        .notif-error { background: var(--red); color: #fff; }
-        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        .filter-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
-        .filter-btn { padding: 5px 12px; border-radius: 99px; font-size: 9px; font-weight: 900; text-transform: uppercase; border: 1px solid var(--border); background: rgba(255,255,255,0.03); color: #666; cursor: pointer; transition: all 0.2s; }
-        .filter-btn.active { border-color: var(--green); background: rgba(16,185,129,0.12); color: var(--green); }
-        /* ── LAST SEEN BADGE ── */
-        .last-seen-badge { display: inline-flex; align-items: center; gap: 4px; margin-top: 3px; font-size: 9px; font-weight: 700; color: #555; }
-        .last-seen-badge.online { color: #10b981; }
-        .last-seen-dot { width: 5px; height: 5px; border-radius: 50%; background: #555; flex-shrink: 0; }
-        .last-seen-badge.online .last-seen-dot { background: #10b981; animation: blink 1.2s infinite; }
-        @media(max-width: 1024px) { .stats-row { grid-template-columns: repeat(4, 1fr); } }
-        @media(max-width: 768px) {
-            .main { padding: 16px; }
-            .stats-row { grid-template-columns: 1fr 1fr; gap: 10px; }
-            .stat-card { padding: 14px 16px; }
-            .stat-card .value { font-size: 21px; }
-            .topbar { padding: 0 14px; height: auto; min-height: 54px; flex-wrap: wrap; gap: 8px; padding-top: 10px; padding-bottom: 10px; }
-            .topbar-logo { font-size: 13px; }
-            .topbar-badge { font-size: 8px; padding: 2px 7px; }
-            .topbar-right { width: 100%; flex-wrap: wrap; gap: 8px; margin-left: 0; }
-            .topbar-right .btn-sm { flex: 1; justify-content: center; display: flex; align-items: center; gap: 4px; }
-            .live-count { order: -1; }
-            .tabs { width: 100%; overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-            .tabs::-webkit-scrollbar { display: none; }
-            .tab { flex-shrink: 0; padding: 8px 14px; }
-            .match-row { grid-template-columns: 1fr; gap: 10px; }
-            .team-home, .team-away { text-align: left; }
-            .score-display { text-align: left; min-width: unset; }
-            .match-actions { min-width: unset; }
-            .actions-row { flex-wrap: wrap; }
-            .actions-row .score-input { width: 48px; flex-shrink: 0; }
-            .actions-row span { flex-shrink: 0; }
-            .actions-row .btn-sm { flex: 1; min-width: 90px; }
-            .modal-box { padding: 20px; width: calc(100vw - 32px); max-height: 90vh; overflow-y: auto; }
-            .form-row { grid-template-columns: 1fr; gap: 0; }
-            .form-row .form-group { margin-bottom: 16px; }
-            .bets-table, .users-table { font-size: 10px; }
-            .bets-table th, .users-table th { padding: 6px 8px; font-size: 8px; }
-            .bets-table td, .users-table td { padding: 8px; }
-            .search-input { max-width: 100%; }
-            .filter-row { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
-            .filter-btn { flex-shrink: 0; }
-        }
-        @media(max-width: 480px) {
-            .stats-row { grid-template-columns: 1fr 1fr; }
-            .topbar-logo { display: none; }
-        }
+        body { background: #050505; color: white; font-family: 'Inter', sans-serif; }
+        .tab-active { border-bottom: 4px solid #10b981; color: #10b981; }
+        .hidden-view { display: none !important; }
     </style>
 </head>
-<body>
+<body class="p-10">
 
-<div id="login-screen">
-    <div class="login-box">
-        <h1>WinMX</h1>
-        <p>Panel de Administración</p>
-        <input id="admin-email" type="email" placeholder="Correo de administrador" onkeydown="if(event.key==='Enter') document.getElementById('admin-pass').focus()" autocomplete="username">
-        <input id="admin-pass" type="password" placeholder="Contraseña" onkeydown="if(event.key==='Enter') Auth.login()" autocomplete="current-password">
-        <button class="btn-primary" id="btn-admin-login" onclick="Auth.login()">Ingresar al Panel</button>
-    </div>
-</div>
-
-<div id="app">
-    <div class="topbar">
-        <span class="topbar-logo">⚽ WinMX Admin</span>
-        <span class="topbar-badge">Mundial 2026</span>
-        <div class="topbar-right">
-            <div class="live-count"><div class="live-dot"></div><span id="live-count-label">0 en vivo</span></div>
-            <button class="btn-sm btn-green" onclick="Modal.openAdd()"><i class="fas fa-plus"></i> Agregar Partido</button>
-            <button class="btn-sm btn-gray" onclick="Auth.logout()"><i class="fas fa-sign-out-alt"></i> Salir</button>
+    <div id="admin-login-view" class="min-h-[70vh] flex items-center justify-center">
+        <div class="bg-zinc-900 p-8 w-full max-w-sm text-center rounded-[2rem] border border-white/5 shadow-2xl">
+            <h2 class="text-3xl font-black mb-2 text-emerald-500 uppercase tracking-tighter italic">WinMX Admin</h2>
+            <p class="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mb-6">Acceso Restringido</p>
+            <div class="space-y-4">
+                <input id="admin-email" type="email" placeholder="Correo electrónico" class="w-full bg-white/5 border border-white/10 p-4 rounded-2xl outline-none text-white text-sm focus:border-emerald-500 transition-colors">
+                <input id="admin-password" type="password" placeholder="Contraseña de Administrador" class="w-full bg-white/5 border border-white/10 p-4 rounded-2xl outline-none text-white text-sm focus:border-emerald-500 transition-colors">
+                <button onclick="AdminAuth.login()" class="w-full py-4 bg-emerald-500 text-black font-black rounded-2xl hover:opacity-80 transition-all uppercase tracking-widest text-sm">Ingresar al Panel</button>
+            </div>
         </div>
     </div>
 
-    <div class="main">
-        <div class="stats-row">
-            <div class="stat-card"><div class="label">Partidos Totales</div><div class="value" id="stat-total">0</div></div>
-            <div class="stat-card"><div class="label">En Vivo Ahora</div><div class="value red" id="stat-live">0</div></div>
-            <div class="stat-card"><div class="label">Apuestas Pendientes</div><div class="value yellow" id="stat-bets">0</div></div>
-            <div class="stat-card"><div class="label">Total en Juego (MXN)</div><div class="value green" id="stat-amount">$0</div></div>
-            <div class="stat-card"><div class="label">Conectados Ahora</div><div class="value" id="stat-online" style="color:#3b82f6;"><span class="live-dot" style="background:#3b82f6; display:inline-block; margin-right:6px;"></span>0</div></div>
-            <div class="stat-card"><div class="label">Total de Usuarios</div><div class="value" id="stat-users" style="color:#8b5cf6;">0</div></div>
+    <div id="admin-panel-content" class="hidden-view">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-4xl font-black text-emerald-500 uppercase tracking-tighter italic">
+                WinMX Admin <span class="text-white text-sm font-normal">Gestión de Transacciones</span>
+            </h1>
+            <button onclick="AdminAuth.logout()" class="px-4 py-2 border border-red-500/30 text-red-500 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-red-500/10 transition-all">Cerrar Sesión</button>
         </div>
 
-        <div class="tabs">
-            <div class="tab active" id="tab-matches" onclick="Admin.setTab('matches')">⚽ Partidos</div>
-            <div class="tab" id="tab-bets" onclick="Admin.setTab('bets')">📋 Apuestas</div>
-            <div class="tab" id="tab-users" onclick="Admin.setTab('users')">👤 Usuarios</div>
-            <div class="tab" id="tab-history" onclick="Admin.setTab('history')">🧾 Historial</div>
+        <div class="flex gap-8 mb-10 border-b border-white/10">
+            <button onclick="changeView('deposits')" id="btn-dep" class="pb-4 font-bold uppercase tracking-widest tab-active">Depósitos</button>
+            <button onclick="changeView('withdrawals')" id="btn-with" class="pb-4 font-bold uppercase tracking-widest text-zinc-500">Retiros</button>
             <button onclick="changeView('support')" id="btn-support" class="pb-4 font-bold uppercase tracking-widest text-zinc-500">
     Soporte <span id="support-tab-badge" class="hidden-view bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full ml-1">0</span>
 </button>
         </div>
 
-        <div id="panel-matches">
-            <div class="filter-row" id="group-filters"></div>
-            <div class="section-title" id="matches-section-title">Todos los partidos</div>
-            <div class="match-grid" id="matches-list">
-                <div style="text-align:center; padding:60px 0; color:#444; font-size:12px; font-weight:700; text-transform:uppercase;">Cargando partidos...</div>
-            </div>
-        </div>
+        <div class="grid grid-cols-1 gap-6" id="pending-list"></div>
 
-        <div id="panel-bets" style="display:none;">
-            <div class="section-title">Todas las apuestas activas</div>
-            <div style="overflow-x:auto;">
-                <table class="bets-table">
-                    <thead>
-                        <tr>
-                            <th>Usuario</th><th>Monto</th><th>Cuota</th><th>Potencial</th><th>Picks</th><th>Estado</th><th>Fecha</th>
-                        </tr>
-                    </thead>
-                    <tbody id="bets-tbody">
-                        <tr><td colspan="7" style="text-align:center; color:#444; padding:40px;">Cargando...</td></tr>
-                    </tbody>
-                </table>
-            </div>
+<!-- ── PANEL DE SOPORTE ── -->
+<div id="support-panel" class="hidden-view" style="display:grid; grid-template-columns:340px 1fr; gap:20px; height:75vh;">
+    <!-- Lista de conversaciones -->
+    <div style="background:#0d0d0d; border:1px solid rgba(255,255,255,0.06); border-radius:1.5rem; overflow-y:auto;">
+        <div style="padding:16px; border-bottom:1px solid rgba(255,255,255,0.06); position:sticky; top:0; background:#0d0d0d; z-index:2;">
+            <h3 class="font-black text-emerald-500 uppercase text-sm tracking-wider"><i class="fas fa-comments mr-2"></i>Conversaciones</h3>
         </div>
+        <div id="support-conversations-list"></div>
+    </div>
 
-        <div id="panel-users" style="display:none;">
-            <div class="section-title">Usuarios registrados</div>
-            <input id="users-search" type="text" class="search-input" placeholder="Buscar por correo..." oninput="Admin.filterUsers()">
-            <div style="overflow-x:auto;">
-                <table class="users-table">
-                    <thead>
-                        <tr>
-                            <th>Correo</th>
-                            <th>Saldo</th>
-                            <th>Registrado</th>
-                            <th>Acción</th>
-                        </tr>
-                    </thead>
-                    <tbody id="users-tbody">
-                        <tr><td colspan="4" style="text-align:center; color:#444; padding:40px;">Cargando...</td></tr>
-                    </tbody>
-                </table>
+    <!-- Ventana de chat activa -->
+    <div style="background:#0d0d0d; border:1px solid rgba(255,255,255,0.06); border-radius:1.5rem; display:flex; flex-direction:column; overflow:hidden;">
+        <div id="support-chat-empty" style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#444;">
+            <div style="font-size:3rem; margin-bottom:10px;">💬</div>
+            <p class="font-bold uppercase text-xs">Selecciona una conversación</p>
+        </div>
+        <div id="support-chat-active" class="hidden-view" style="display:flex; flex-direction:column; height:100%;">
+            <div id="support-active-header" style="padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.06); display:flex; justify-content:between; align-items:center;"></div>
+            <div id="support-active-messages" style="flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:10px;"></div>
+            <div style="padding:14px 16px; border-top:1px solid rgba(255,255,255,0.06); display:flex; gap:10px;">
+                <input id="support-admin-input" type="text" placeholder="Escribe tu respuesta..." onkeydown="if(event.key==='Enter')AdminSupport.send()" class="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-emerald-500">
+                <button onclick="AdminSupport.send()" class="bg-emerald-500 text-black px-6 py-3 rounded-xl font-black uppercase text-xs hover:opacity-80">Enviar</button>
             </div>
-        </div>
-
-        <div id="panel-history" style="display:none;">
-            <div class="section-title">Historial de movimientos (con correo)</div>
-            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px;">
-                <input id="history-search" type="text" class="search-input" style="margin-bottom:0;" placeholder="Buscar por correo..." oninput="Admin.filterHistory()">
-                <select id="history-type-filter" onchange="Admin.filterHistory()" style="background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:10px; padding:10px 14px; color:#fff; font-size:12px; outline:none;">
-                    <option value="all">Todos los tipos</option>
-                    <option value="bets">Apuestas / Jugadas</option>
-                    <option value="deposits">Depósitos</option>
-                </select>
-            </div>
-            <div style="overflow-x:auto;">
-                <table class="users-table">
-                    <thead>
-                        <tr>
-                            <th>Correo</th><th>Tipo</th><th>Etiqueta</th><th>Monto</th><th>Estado</th><th>Fecha</th>
-                        </tr>
-                    </thead>
-                    <tbody id="history-tbody">
-                        <tr><td colspan="6" style="text-align:center; color:#444; padding:40px;">Cargando...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-<div class="modal-overlay" id="modal-match">
-    <div class="modal-box">
-        <h3 id="modal-title">Agregar <span>Partido</span></h3>
-        <input type="hidden" id="edit-match-id">
-        <div class="form-row">
-            <div class="form-group"><label>Equipo Local</label><input id="f-home" type="text" placeholder="🇲🇽 México"></div>
-            <div class="form-group" style="display:flex; align-items:flex-end; justify-content:center; padding-bottom:16px;"><span style="font-weight:900; color:#555; font-size:18px;">VS</span></div>
-            <div class="form-group"><label>Equipo Visitante</label><input id="f-away" type="text" placeholder="🇧🇷 Brasil"></div>
-        </div>
-        <div class="form-row">
-            <div class="form-group"><label>Cuota Local (1)</label><input id="f-odd1" type="number" step="0.01" placeholder="1.75"></div>
-            <div class="form-group"><label>Cuota Empate (X)</label><input id="f-oddx" type="number" step="0.01" placeholder="3.20"></div>
-            <div class="form-group"><label>Cuota Visitante (2)</label><input id="f-odd2" type="number" step="0.01" placeholder="4.50"></div>
-        </div>
-        <div class="form-row">
-            <div class="form-group"><label>Fecha (ej: Jun 11)</label><input id="f-date" type="text" placeholder="Jun 11"></div>
-            <div class="form-group"><label>Hora (ej: 14:00)</label><input id="f-time" type="text" placeholder="14:00"></div>
-            <div class="form-group"><label>Grupo</label><input id="f-group" type="text" placeholder="A"></div>
-        </div>
-        <div class="form-group"><label>Estadio / Sede</label><input id="f-venue" type="text" placeholder="Estadio Azteca, México"></div>
-        <div class="form-group">
-            <label>Fase</label>
-            <select id="f-phase">
-                <option value="Grupos">Fase de Grupos</option>
-                <option value="Octavos">Octavos de Final</option>
-                <option value="Cuartos">Cuartos de Final</option>
-                <option value="Semifinal">Semifinal</option>
-                <option value="Final">Final</option>
-            </select>
-        </div>
-        <div class="modal-footer">
-            <button class="btn-sm btn-gray" style="padding:12px;" onclick="Modal.close()">Cancelar</button>
-            <button class="btn-primary" onclick="Modal.save()">Guardar Partido</button>
         </div>
     </div>
 </div>
-
-<div class="modal-overlay" id="modal-result">
-    <div class="modal-box" style="max-width:360px;">
-        <h3>Confirmar <span>Resultado</span></h3>
-        <input type="hidden" id="res-match-id">
-        <input type="hidden" id="res-result">
-        <div id="res-summary" style="background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.2); border-radius:10px; padding:16px; margin-bottom:20px; text-align:center;"></div>
-        <p style="font-size:11px; color:#888; margin-bottom:20px; line-height:1.6;">
-            Al confirmar:<br>
-            ✅ Se pagará automáticamente a todos los usuarios que acertaron.<br>
-            ❌ Los tickets perdedores quedarán cerrados.<br>
-            🔒 El partido se ocultará de la sección del casino.
-        </p>
-        <div class="modal-footer">
-            <button class="btn-sm btn-gray" style="padding:12px;" onclick="document.getElementById('modal-result').classList.remove('open')">Cancelar</button>
-            <button class="btn-primary" onclick="Admin.confirmResult()">✅ Confirmar y Pagar</button>
-        </div>
     </div>
-</div>
 
-<div class="modal-overlay" id="modal-delete-user">
-    <div class="modal-box" style="max-width:420px;">
-        <h3>Eliminar <span>Usuario</span></h3>
-        <input type="hidden" id="del-user-id">
-        <div id="del-user-summary" style="background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:10px; padding:14px; margin-bottom:16px; text-align:center; font-size:12px; color:#ccc;"></div>
-        <div class="warning-box">⚠️ Esta acción es <strong>permanente</strong>. Se eliminará al usuario de Auth y se borrará TODO su historial (apuestas, depósitos, retiros). No hay vuelta atrás.</div>
-        <div class="form-group">
-            <label>Mensaje final para el usuario</label>
-            <textarea id="del-user-message">Tu cuenta ha sido suspendida permanentemente por incumplir los términos y condiciones de WinMX. Esta decisión es definitiva.</textarea>
-        </div>
-        <p style="font-size:10px; color:#666; margin-bottom:16px; line-height:1.5;">El usuario verá este mensaje a pantalla completa la próxima vez que la app detecte la suspensión (o de inmediato si tiene la app abierta). Solo podrá cerrar sesión; sus datos se eliminarán por completo en ese momento.</p>
-        <div class="modal-footer">
-            <button class="btn-sm btn-gray" style="padding:12px;" onclick="Admin.closeDeleteModal()">Cancelar</button>
-            <button class="btn-sm btn-danger" style="padding:12px; flex:1;" id="btn-confirm-delete" onclick="Admin.executeDeleteUser()">🗑️ Eliminar Permanentemente</button>
-        </div>
-    </div>
-</div>
+    <script>
+        const sb = window.supabase.createClient("https://dakhnqriwbzihlzhtfcb.supabase.co", "sb_publishable_rRcNEvZ9n0IEJzTQcK90nQ_5lfwSDYs");
+        let currentType = 'deposits';
 
-<div id="notif"></div>
+        const CORREO_ADMIN_AUTORIZADO = "ed8108868@gmail.com";
 
-<script>
-const DB = { url: "https://dakhnqriwbzihlzhtfcb.supabase.co", key: "sb_publishable_rRcNEvZ9n0IEJzTQcK90nQ_5lfwSDYs" };
-const sb = window.supabase.createClient(DB.url, DB.key);
-const ADMIN_LOGIN_URL = DB.url + "/functions/v1/Index";
+        // ════════════════════════════════════════════
+// MÓDULO ADMIN: BANDEJA DE SOPORTE
+// ════════════════════════════════════════════
+const AdminSupport = {
+    conversations: {},
+    activeUserId: null,
+    realtimeStarted: false,
 
-const notify = (msg, type = 'success') => {
-    const n = document.createElement('div');
-    n.className = `notif-item notif-${type}`;
-    n.innerText = msg;
-    document.getElementById('notif').appendChild(n);
-    setTimeout(() => n.remove(), 4000);
-};
+    async loadConversations() {
+        const { data, error } = await sb.from('support_messages')
+            .select('*')
+            .order('created_at', { ascending: true });
+        if (error) { console.error(error); return; }
 
-// ── Formatea "última conexión" de forma legible en español ──
-function formatLastSeen(isoString) {
-    if (!isoString) return null;
-    const d = new Date(isoString);
-    const now = new Date();
-    const diffMs = now - d;
-    const diffMin = Math.floor(diffMs / 60000);
-    const diffH = Math.floor(diffMs / 3600000);
-    const diffD = Math.floor(diffMs / 86400000);
-
-    if (diffMin < 2) return { text: 'En línea ahora', online: true };
-    if (diffMin < 60) return { text: `Hace ${diffMin} min`, online: false };
-    if (diffH < 24) return { text: `Hace ${diffH} h`, online: false };
-    if (diffD === 1) return { text: 'Ayer', online: false };
-
-    // Fecha completa: "18 de junio a las 13:20"
-    const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-    const dia = d.getDate();
-    const mes = meses[d.getMonth()];
-    const hora = d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: true });
-    return { text: `${dia} de ${mes} a las ${hora}`, online: false };
-}
-
-const Auth = {
-    async login() {
-        const email = document.getElementById('admin-email').value.trim();
-        const pass = document.getElementById('admin-pass').value;
-        if (!email || !pass) return notify('Ingresa correo y contraseña', 'error');
-        const btn = document.getElementById('btn-admin-login');
-        btn.disabled = true; btn.innerText = 'Verificando...';
-        try {
-            const res = await fetch(ADMIN_LOGIN_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'apikey': DB.key, 'Authorization': 'Bearer ' + DB.key },
-                body: JSON.stringify({ email, password: pass })
+        const grouped = {};
+        (data || []).forEach(m => {
+            if (!grouped[m.user_id]) grouped[m.user_id] = { messages: [], email: m.user_id };
+            grouped[m.user_id].messages.push(m);
+        });
+        
+        // Obtener emails de usuarios
+        const userIds = Object.keys(grouped);
+        if (userIds.length > 0) {
+            const { data: usuarios } = await sb.from('usuarios').select('id, email').in('id', userIds);
+            (usuarios || []).forEach(u => {
+                if (grouped[u.id]) grouped[u.id].email = u.email || u.id;
             });
-            const result = await res.json();
-            if (!res.ok) { notify(result.error || 'No se pudo iniciar sesión', 'error'); btn.disabled = false; btn.innerText = 'Ingresar al Panel'; return; }
-            const { error: setErr } = await sb.auth.setSession({ access_token: result.access_token, refresh_token: result.refresh_token });
-            if (setErr) { notify('Error estableciendo sesión: ' + setErr.message, 'error'); btn.disabled = false; btn.innerText = 'Ingresar al Panel'; return; }
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('app').style.display = 'block';
-            Admin.init();
-        } catch (e) { notify('Error de conexión: ' + e.message, 'error'); btn.disabled = false; btn.innerText = 'Ingresar al Panel'; }
-    },
-    async logout() { await sb.auth.signOut(); location.reload(); },
-    async check() {
-        const { data: { session } } = await sb.auth.getSession();
-        if (session) { document.getElementById('login-screen').style.display = 'none'; document.getElementById('app').style.display = 'block'; Admin.init(); }
-    }
-};
-
-const Admin = {
-    matches: [], bets: [], currentFilter: 'all', currentTab: 'matches',
-
-    async init() {
-        await this.loadMatches(); await this.loadBets(); await this.loadUsers(); await this.loadHistory();
-        this.subscribeRealtime(); this.updateStats();
+        }
+        
+        this.conversations = grouped;
+        this.renderList();
+        this.updateGlobalBadge();
+        if (!this.realtimeStarted) { this.subscribeRealtime(); this.realtimeStarted = true; }
     },
 
-    async loadMatches() {
-        const { data, error } = await sb.from('wc_matches').select('*').order('match_date', { ascending: true });
-        if (error) { notify('Error cargando partidos: ' + error.message, 'error'); return; }
-        this.matches = data || []; this.renderFilters(); this.renderMatches(); this.updateStats();
-    },
+    renderList() {
+        const container = document.getElementById('support-conversations-list');
+        if (!container) return;
+        const entries = Object.entries(this.conversations).sort((a, b) => {
+            const lastA = a[1].messages[a[1].messages.length - 1]?.created_at || '';
+            const lastB = b[1].messages[b[1].messages.length - 1]?.created_at || '';
+            return new Date(lastB) - new Date(lastA);
+        });
 
-    async loadBets() {
-        const { data, error } = await sb.from('wc_bets').select('*, usuarios(email)').order('created_at', { ascending: false });
-        if (error) { notify('Error cargando apuestas: ' + error.message, 'error'); return; }
-        this.bets = data || []; this.renderBets(); this.renderMatches(); this.updateStats();
-    },
-
-    users: [],
-    async loadUsers() {
-        // ── Se agrega last_seen al select ──
-        const { data, error } = await sb
-            .from('usuarios')
-            .select('id, email, saldo, created_at, last_seen')
-            .order('created_at', { ascending: false });
-        if (error) { notify('Error cargando usuarios: ' + error.message, 'error'); return; }
-        this.users = data || []; this.renderUsers(); this.updateStats();
-    },
-
-    filterUsers() { this.renderUsers(); },
-
-    renderUsers() {
-        const tbody = document.getElementById('users-tbody');
-        const term = (document.getElementById('users-search')?.value || '').trim().toLowerCase();
-        const filtered = term ? this.users.filter(u => (u.email || '').toLowerCase().includes(term)) : this.users;
-
-        if (!filtered.length) {
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#444;padding:40px;font-size:12px;text-transform:uppercase;">Sin usuarios${term ? ' que coincidan' : ''}</td></tr>`;
+        if (entries.length === 0) {
+            container.innerHTML = `<p class="text-zinc-600 text-xs text-center p-6">Sin conversaciones aún.</p>`;
             return;
         }
 
-        tbody.innerHTML = filtered.map(u => {
-            const d = u.created_at ? new Date(u.created_at) : null;
-            const fecha = d ? `${d.toLocaleDateString('es-MX')} ${d.toTimeString().slice(0,5)}` : '—';
-
-            // ── Última conexión ──
-            const ls = formatLastSeen(u.last_seen);
-            const lastSeenHtml = ls
-                ? `<div class="last-seen-badge ${ls.online ? 'online' : ''}">
-                     <div class="last-seen-dot"></div>
-                     ${ls.text}
-                   </div>`
-                : `<div class="last-seen-badge">Sin conexión registrada</div>`;
-
-            return `<tr>
-                <td style="font-weight:700;">
-                    ${u.email || '(sin correo)'}
-                    ${lastSeenHtml}
-                </td>
-                <td style="color:#10b981;font-weight:700;">$${(u.saldo || 0).toFixed(2)}</td>
-                <td style="font-size:9px;color:#666;">${fecha}</td>
-                <td><button class="btn-sm btn-danger" onclick="Admin.openDeleteModal('${u.id}','${(u.email||'').replace(/'/g,"\\'")}', ${u.saldo || 0})"><i class="fas fa-trash"></i> Eliminar</button></td>
-            </tr>`;
+        container.innerHTML = entries.map(([userId, conv]) => {
+            const last = conv.messages[conv.messages.length - 1];
+            const unread = conv.messages.filter(m => m.sender === 'user' && !m.read_by_admin).length;
+            const isActive = this.activeUserId === userId;
+            const time = last ? new Date(last.created_at).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '';
+            return `<div onclick="AdminSupport.openConversation('${userId}')" style="padding:14px 16px; border-bottom:1px solid rgba(255,255,255,0.04); cursor:pointer; background:${isActive ? 'rgba(16,185,129,0.08)' : 'transparent'}; border-left:3px solid ${isActive ? '#10b981' : 'transparent'};">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                    <span style="font-size:11px; font-weight:800; color:white; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:180px;">${conv.email}</span>
+                    ${unread > 0 ? `<span style="background:#ef4444; color:white; font-size:9px; font-weight:900; padding:2px 7px; border-radius:99px;">${unread}</span>` : ''}
+                </div>
+                <p style="font-size:10px; color:#777; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${last?.sender === 'admin' ? '↳ ' : ''}${last?.message || ''}</p>
+                <p style="font-size:8px; color:#444; margin-top:2px;">${time}</p>
+            </div>`;
         }).join('');
     },
 
-    openDeleteModal(userId, email, saldo) {
-        document.getElementById('del-user-id').value = userId;
-        document.getElementById('del-user-summary').innerHTML = `
-            <div style="font-weight:900;color:white;font-size:13px;margin-bottom:4px;">${email}</div>
-            <div style="color:#888;">Saldo actual: <strong style="color:#fbbf24;">$${saldo.toFixed(2)} MXN</strong></div>`;
-        document.getElementById('modal-delete-user').classList.add('open');
+    async openConversation(userId) {
+        this.activeUserId = userId;
+        document.getElementById('support-chat-empty').classList.add('hidden-view');
+        document.getElementById('support-chat-active').classList.remove('hidden-view');
+
+        const conv = this.conversations[userId];
+        document.getElementById('support-active-header').innerHTML = `
+            <div>
+                <p class="font-black text-white text-sm">${conv.email}</p>
+                <p class="text-[9px] text-zinc-500 font-mono">${userId}</p>
+            </div>`;
+
+        this.renderMessages();
+        this.renderList();
+
+        // Marcar como leídos por admin
+        await sb.from('support_messages')
+            .update({ read_by_admin: true })
+            .eq('user_id', userId)
+            .eq('sender', 'user')
+            .eq('read_by_admin', false);
+        conv.messages.forEach(m => { if (m.sender === 'user') m.read_by_admin = true; });
+        this.renderList();
+        this.updateGlobalBadge();
     },
 
-    closeDeleteModal() { document.getElementById('modal-delete-user').classList.remove('open'); },
-
-    async executeDeleteUser() {
-        const userId = document.getElementById('del-user-id').value;
-        const message = document.getElementById('del-user-message').value.trim();
-        if (!userId) return;
-        if (!message) return notify('Escribe un mensaje para el usuario', 'error');
-        const btn = document.getElementById('btn-confirm-delete');
-        btn.disabled = true; btn.innerText = 'Procesando...';
-        try {
-            const { data: { session } } = await sb.auth.getSession();
-            if (!session) throw new Error('Sesión de admin no válida');
-            const { error: banErr } = await sb.from('pending_bans').upsert({ user_id: userId, message: message, created_by: session.user.id });
-            if (banErr) throw banErr;
-            notify('⏳ Aviso enviado al usuario. Esperando que cierre sesión...', 'success');
-            this.closeDeleteModal();
-            await this.loadUsers();
-        } catch (e) { notify('Error: ' + e.message, 'error'); }
-        finally { btn.disabled = false; btn.innerText = '🗑️ Eliminar Permanentemente'; }
-    },
-
-    async forceDeleteNow(userId) {
-        if (!confirm('¿Forzar la eliminación ahora mismo?')) return;
-        try {
-            const { data: { session } } = await sb.auth.getSession();
-            const res = await fetch(DB.url + '/functions/v1/admin-delete-user', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'apikey': DB.key, 'Authorization': 'Bearer ' + session.access_token },
-                body: JSON.stringify({ target_user_id: userId })
-            });
-            const result = await res.json();
-            if (!res.ok) throw new Error(result.error || 'Error desconocido');
-            notify('✅ Usuario eliminado completamente', 'success');
-            await this.loadUsers();
-        } catch (e) { notify('Error al forzar eliminación: ' + e.message, 'error'); }
-    },
-
-    historyItems: [],
-    async loadHistory() {
-        const { data, error } = await sb.from('history_con_email').select('*').order('created_at', { ascending: false }).limit(500);
-        if (error) { notify('Error cargando historial: ' + error.message, 'error'); return; }
-        this.historyItems = data || []; this.renderHistory();
-    },
-
-    filterHistory() { this.renderHistory(); },
-
-    renderHistory() {
-        const tbody = document.getElementById('history-tbody');
-        const term = (document.getElementById('history-search')?.value || '').trim().toLowerCase();
-        const typeFilter = document.getElementById('history-type-filter')?.value || 'all';
-        let filtered = this.historyItems;
-        if (typeFilter !== 'all') filtered = filtered.filter(h => h.type === typeFilter);
-        if (term) filtered = filtered.filter(h => (h.email || '').toLowerCase().includes(term));
-        if (!filtered.length) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#444;padding:40px;font-size:12px;text-transform:uppercase;">Sin movimientos${term ? ' que coincidan' : ''}</td></tr>`; return; }
-        tbody.innerHTML = filtered.map(h => {
-            const sc = h.amount >= 0 ? '#10b981' : '#ef4444';
-            const stColor = h.status === 'completed' ? '#10b981' : h.status === 'pending' ? '#fbbf24' : h.status === 'rejected' ? '#ef4444' : '#888';
-            const d = h.created_at ? new Date(h.created_at) : null;
-            const fecha = d ? `${d.toLocaleDateString('es-MX')}<br>${d.toTimeString().slice(0,5)}` : '—';
-            return `<tr>
-                <td style="font-weight:700; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${h.email || ''}">${h.email || '(sin correo)'}</td>
-                <td style="font-size:9px; color:#888; text-transform:uppercase;">${h.type === 'bets' ? 'Apuesta' : h.type === 'deposits' ? 'Depósito' : h.type}</td>
-                <td style="font-size:10px;">${h.label || '—'}</td>
-                <td style="color:${sc}; font-weight:700;">$${Math.abs(h.amount || 0).toFixed(2)}</td>
-                <td style="color:${stColor}; font-size:9px; font-weight:700; text-transform:uppercase;">${h.status || '—'}</td>
-                <td style="font-size:9px; color:#666;">${fecha}</td>
-            </tr>`;
+    renderMessages() {
+        const box = document.getElementById('support-active-messages');
+        if (!box || !this.activeUserId) return;
+        const conv = this.conversations[this.activeUserId];
+        box.innerHTML = conv.messages.map(m => {
+            const isAdmin = m.sender === 'admin';
+            const time = new Date(m.created_at).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+            return `<div style="display:flex; justify-content:${isAdmin ? 'flex-end' : 'flex-start'};">
+                <div style="max-width:65%; background:${isAdmin ? 'linear-gradient(135deg,#10b981,#059669)' : 'rgba(255,255,255,0.06)'}; color:${isAdmin ? 'black' : 'white'}; padding:10px 14px; border-radius:${isAdmin ? '14px 14px 2px 14px' : '14px 14px 14px 2px'}; font-size:12px; font-weight:600;">
+                    ${m.message}
+                    <div style="font-size:8px; opacity:0.6; margin-top:3px; text-align:right;">${time}</div>
+                </div>
+            </div>`;
         }).join('');
+        box.scrollTop = box.scrollHeight;
+    },
+
+    async send() {
+        const input = document.getElementById('support-admin-input');
+        const text = input.value.trim();
+        if (!text || !this.activeUserId) return;
+        input.value = '';
+        const { error } = await sb.from('support_messages').insert([{
+            user_id: this.activeUserId,
+            sender: 'admin',
+            message: text
+        }]);
+        if (error) { 
+            alert("Error al enviar: " + error.message); 
+        } else {
+            // Recargar mensajes inmediatamente
+            const userId = this.activeUserId;
+            await new Promise(r => setTimeout(r, 300));
+            await this.loadConversations();
+            this.openConversation(userId);
+        }
+    },
+
+    updateGlobalBadge() {
+        let totalUnread = 0;
+        Object.values(this.conversations).forEach(c => {
+            totalUnread += c.messages.filter(m => m.sender === 'user' && !m.read_by_admin).length;
+        });
+        const badge = document.getElementById('support-tab-badge');
+        if (badge) {
+            if (totalUnread > 0) { badge.innerText = totalUnread; badge.classList.remove('hidden-view'); }
+            else badge.classList.add('hidden-view');
+        }
     },
 
     subscribeRealtime() {
-        sb.channel('admin_wc_matches').on('postgres_changes', { event: '*', schema: 'public', table: 'wc_matches' }, () => this.loadMatches()).subscribe();
-        sb.channel('admin_wc_bets').on('postgres_changes', { event: '*', schema: 'public', table: 'wc_bets' }, () => this.loadBets()).subscribe();
-        sb.channel('admin_usuarios').on('postgres_changes', { event: '*', schema: 'public', table: 'usuarios' }, () => this.loadUsers()).subscribe();
-        sb.channel('admin_history').on('postgres_changes', { event: '*', schema: 'public', table: 'history' }, () => this.loadHistory()).subscribe();
-        sb.channel('online_users', { config: { presence: { key: 'admin_viewer' } } }).on('presence', { event: 'sync' }, () => this.updateOnlineCount()).subscribe();
-    },
-
-    updateOnlineCount() {
-        const ch = sb.getChannels().find(c => c.topic === 'realtime:online_users');
-        if (!ch) return;
-        const state = ch.presenceState();
-        const count = Object.keys(state).length;
-        const el = document.getElementById('stat-online');
-        if (el) el.innerHTML = `<span class="live-dot" style="background:#3b82f6; display:inline-block; margin-right:6px;"></span>${count}`;
-    },
-
-    updateStats() {
-        const live = this.matches.filter(m => m.status === 'live').length;
-        const pending = this.bets.filter(b => b.status === 'pending').length;
-        const amount = this.bets.filter(b => b.status === 'pending').reduce((s, b) => s + (b.amount || 0), 0);
-        const totalUsers = this.users.length;
-        document.getElementById('stat-total').innerText = this.matches.length;
-        document.getElementById('stat-live').innerText = live;
-        document.getElementById('stat-bets').innerText = pending;
-        document.getElementById('stat-amount').innerText = '$' + amount.toFixed(2);
-        document.getElementById('stat-users').innerText = totalUsers;
-        document.getElementById('live-count-label').innerText = live + (live === 1 ? ' en vivo' : ' en vivo');
-    },
-
-    renderFilters() {
-        const container = document.getElementById('group-filters');
-        const groups = ['Todos', ...new Set(this.matches.map(m => m.group_name).filter(Boolean).sort())];
-        container.innerHTML = groups.map(g => {
-            const val = g === 'Todos' ? 'all' : g;
-            return `<button class="filter-btn ${this.currentFilter === val ? 'active' : ''}" onclick="Admin.filterBy('${val}')">${g === 'Todos' ? 'Todos' : 'Grupo ' + g}</button>`;
-        }).join('');
-    },
-
-    filterBy(val) { this.currentFilter = val; this.renderFilters(); this.renderMatches(); },
-
-    renderMatches() {
-        const list = document.getElementById('matches-list');
-        let filtered = this.currentFilter === 'all' ? this.matches : this.matches.filter(m => m.group_name === this.currentFilter);
-        filtered = [...filtered].sort((a, b) => { const order = { live: 0, upcoming: 1, finished: 2 }; return (order[a.status] ?? 1) - (order[b.status] ?? 1); });
-        if (filtered.length === 0) { list.innerHTML = `<div style="text-align:center; padding:60px 0; color:#444; font-size:12px; font-weight:700; text-transform:uppercase;">Sin partidos. Agrega uno con el botón de arriba.</div>`; return; }
-        list.innerHTML = filtered.map(m => this.matchCard(m)).join('');
-    },
-
-    matchCard(m) {
-        const isLive = m.status === 'live', isFinished = m.status === 'finished';
-        const statusBadge = isLive
-            ? `<span class="match-status-badge badge-live">● EN VIVO ${m.minute ? m.minute + "'" : ''}${m.bets_paused ? ' · ⏸ PAUSADO' : ''}</span>`
-            : isFinished
-            ? `<span class="match-status-badge badge-finished">FIN · ${m.result === '1' ? m.home + ' ganó' : m.result === '2' ? m.away + ' ganó' : 'Empate'}</span>`
-            : `<span class="match-status-badge badge-upcoming">📅 ${m.match_date || ''} ${m.match_time || ''}</span>`;
-        const pendingBets = this.bets.filter(b => b.status === 'pending' && b.picks && b.picks.some(p => p.matchId === m.id));
-        const scoreSection = isLive || isFinished
-            ? `<div class="score-display"><div class="score-nums">${m.score_home ?? 0} - ${m.score_away ?? 0}</div><div class="match-meta">${statusBadge}</div></div>`
-            : `<div class="score-display"><div style="font-size:13px; font-weight:900; color:#333;">VS</div><div class="match-meta">${statusBadge}</div></div>`;
-        const actionButtons = isFinished
-            ? `<div style="font-size:10px; color:#555; font-weight:700; text-transform:uppercase; text-align:center; padding:8px;">✅ Partido cerrado · ${pendingBets.length} apuestas resueltas</div>`
-            : isLive
-            ? `<div class="match-actions">
-                <div class="actions-row" style="align-items:center; gap:8px;">
-                    <span style="font-size:9px;color:#555;font-weight:700;text-transform:uppercase;white-space:nowrap;">Marcador:</span>
-                    <input class="score-input" id="sh-${m.id}" type="number" min="0" value="${m.score_home ?? 0}">
-                    <span style="color:#555;font-weight:900;">-</span>
-                    <input class="score-input" id="sa-${m.id}" type="number" min="0" value="${m.score_away ?? 0}">
-                    <button class="btn-sm btn-green" onclick="Admin.updateScore('${m.id}')"><i class="fas fa-sync-alt"></i> Actualizar</button>
-                </div>
-                <div class="actions-row" style="align-items:center; gap:8px;">
-                    <span style="font-size:9px;color:#555;font-weight:700;text-transform:uppercase;white-space:nowrap;">Minuto:</span>
-                    <input class="score-input" id="min-${m.id}" type="number" min="0" max="120" value="${m.minute ?? 1}" style="width:54px;">
-                    <button class="btn-sm btn-yellow" onclick="Admin.updateMinute('${m.id}')">Guardar</button>
-                    <button class="btn-sm btn-gray" onclick="Admin.setPaused('${m.id}')"><i class="fas fa-pause"></i> HT</button>
-                </div>
-                <div class="actions-row" style="align-items:center; gap:6px; flex-wrap:wrap;">
-                    <span style="font-size:9px;color:#555;font-weight:700;text-transform:uppercase;white-space:nowrap;">Cuotas:</span>
-                    <input class="score-input" id="o1-${m.id}" type="number" step="0.01" value="${(m.home_odd||2).toFixed(2)}" style="width:54px;" title="Local">
-                    <input class="score-input" id="ox-${m.id}" type="number" step="0.01" value="${(m.draw_odd||3.2).toFixed(2)}" style="width:54px;" title="Empate">
-                    <input class="score-input" id="o2-${m.id}" type="number" step="0.01" value="${(m.away_odd||3.5).toFixed(2)}" style="width:54px;" title="Visitante">
-                    <button class="btn-sm btn-green" onclick="Admin.updateOdds('${m.id}')">Actualizar</button>
-                </div>
-                <div class="actions-row">
-                    ${m.bets_paused
-                        ? `<button class="btn-sm btn-green" style="flex:1;padding:8px;" onclick="Admin.toggleBetsPause('${m.id}', false)"><i class="fas fa-play"></i> Reanudar Apuestas</button>`
-                        : `<button class="btn-sm btn-yellow" style="flex:1;padding:8px;" onclick="Admin.toggleBetsPause('${m.id}', true)"><i class="fas fa-pause"></i> Pausar Apuestas</button>`}
-                </div>
-                <div>
-                    <div style="font-size:9px;color:#555;font-weight:700;text-transform:uppercase;margin-bottom:5px;">Marcar Resultado Final:</div>
-                    <div class="result-btns">
-                        <button class="btn-result win1" onclick="Admin.openResultConfirm('${m.id}','1','${m.home.replace(/'/g,"\\'")} gana')">1 ${m.home}</button>
-                        <button class="btn-result draw" onclick="Admin.openResultConfirm('${m.id}','X','Empate')">X Empate</button>
-                        <button class="btn-result win2" onclick="Admin.openResultConfirm('${m.id}','2','${m.away.replace(/'/g,"\\'")} gana')">2 ${m.away}</button>
-                    </div>
-                </div>
-                <div style="font-size:9px;color:#fbbf24;font-weight:700;text-transform:uppercase;">⏳ ${pendingBets.length} apuesta${pendingBets.length !== 1 ? 's' : ''} pendiente${pendingBets.length !== 1 ? 's' : ''}</div>
-               </div>`
-            : `<div class="match-actions">
-                <button class="btn-sm btn-live" style="padding:10px;" onclick="Admin.setLive('${m.id}')"><i class="fas fa-play"></i> Iniciar Partido EN VIVO</button>
-                <div style="font-size:9px;color:#555;font-weight:700;text-transform:uppercase;text-align:center;">${pendingBets.length} apuesta${pendingBets.length !== 1 ? 's' : ''} pre-partido</div>
-                <div class="actions-row">
-                    <button class="btn-sm btn-gray" onclick="Modal.openEdit('${m.id}')"><i class="fas fa-edit"></i> Editar</button>
-                    <button class="btn-sm btn-danger" onclick="Admin.deleteMatch('${m.id}')"><i class="fas fa-trash"></i> Eliminar</button>
-                </div>
-               </div>`;
-        return `<div class="match-row ${isLive ? 'live' : isFinished ? 'finished' : ''}" id="match-row-${m.id}">
-            <div class="team-name team-home">${m.home}</div>
-            ${scoreSection}
-            <div class="team-name team-away">${m.away}</div>
-            <div>${actionButtons}</div>
-        </div>`;
-    },
-
-    async setLive(matchId) {
-        const { error } = await sb.from('wc_matches').update({ status: 'live', minute: 1, score_home: 0, score_away: 0, notify_live: true }).eq('id', matchId);
-        if (error) return notify('Error: ' + error.message, 'error');
-        setTimeout(async () => { await sb.from('wc_matches').update({ notify_live: false }).eq('id', matchId); }, 3000);
-        notify('✅ Partido iniciado — notificación enviada a todos los usuarios', 'success');
-        await this.loadMatches();
-    },
-
-    async updateScore(matchId) {
-        const sh = parseInt(document.getElementById(`sh-${matchId}`)?.value ?? 0);
-        const sa = parseInt(document.getElementById(`sa-${matchId}`)?.value ?? 0);
-        const min = parseInt(document.getElementById(`min-${matchId}`)?.value ?? 0);
-        const { error } = await sb.from('wc_matches').update({ score_home: sh, score_away: sa, minute: min }).eq('id', matchId);
-        if (error) return notify('Error actualizando: ' + error.message, 'error');
-        notify(`⚽ Marcador actualizado: ${sh} - ${sa} (${min}')`, 'success');
-        await this.loadMatches();
-    },
-
-    async updateMinute(matchId) {
-        const min = parseInt(document.getElementById(`min-${matchId}`)?.value ?? 0);
-        const { error } = await sb.from('wc_matches').update({ minute: min }).eq('id', matchId);
-        if (error) return notify('Error: ' + error.message, 'error');
-        notify(`🕐 Minuto actualizado: ${min}'`, 'success');
-        await this.loadMatches();
-    },
-
-    async updateOdds(matchId) {
-        const o1 = parseFloat(document.getElementById(`o1-${matchId}`)?.value);
-        const ox = parseFloat(document.getElementById(`ox-${matchId}`)?.value);
-        const o2 = parseFloat(document.getElementById(`o2-${matchId}`)?.value);
-        if (!o1 || !ox || !o2) return notify('Ingresa cuotas válidas', 'error');
-        const { error } = await sb.from('wc_matches').update({ home_odd: o1, draw_odd: ox, away_odd: o2 }).eq('id', matchId);
-        if (error) return notify('Error: ' + error.message, 'error');
-        notify(`📊 Cuotas actualizadas: ${o1} / ${ox} / ${o2}`, 'success');
-        await this.loadMatches();
-    },
-
-    async toggleBetsPause(matchId, pause) {
-        const { error } = await sb.from('wc_matches').update({ bets_paused: pause }).eq('id', matchId);
-        if (error) return notify('Error: ' + error.message, 'error');
-        notify(pause ? '⏸ Apuestas PAUSADAS' : '▶️ Apuestas REANUDADAS', pause ? 'error' : 'success');
-        await this.loadMatches();
-    },
-
-    async setPaused(matchId) {
-        const { error } = await sb.from('wc_matches').update({ minute: 45, status: 'live' }).eq('id', matchId);
-        if (error) return notify('Error: ' + error.message, 'error');
-        notify('⏸ Marcado como Medio Tiempo (HT)', 'success');
-    },
-
-    openResultConfirm(matchId, result, label) {
-        const m = this.matches.find(x => x.id === matchId);
-        if (!m) return;
-        document.getElementById('res-match-id').value = matchId;
-        document.getElementById('res-result').value = result;
-        const pendingBets = this.bets.filter(b => b.status === 'pending' && b.picks && b.picks.some(p => p.matchId === matchId));
-        const totalPot = pendingBets.reduce((s, b) => { const pick = b.picks?.find(p => p.matchId === matchId); return pick ? s + (pick.odd * b.amount) : s; }, 0);
-        document.getElementById('res-summary').innerHTML = `
-            <div style="font-size:13px; font-weight:900; color:white; margin-bottom:8px;">${m.home} vs ${m.away}</div>
-            <div style="font-size:18px; font-weight:900; color:#10b981; margin-bottom:8px;">Resultado: ${label}</div>
-            <div style="font-size:11px; color:#888;">${pendingBets.length} apuesta${pendingBets.length !== 1 ? 's' : ''} afectada${pendingBets.length !== 1 ? 's' : ''}<br>Pago estimado: <strong style="color:#fbbf24;">$${totalPot.toFixed(2)} MXN</strong></div>`;
-        document.getElementById('modal-result').classList.add('open');
-    },
-
-    async confirmResult() {
-        const matchId = document.getElementById('res-match-id').value;
-        const result = document.getElementById('res-result').value;
-        const m = this.matches.find(x => x.id === matchId);
-        if (!m) return;
-        document.getElementById('modal-result').classList.remove('open');
-        notify('⏳ Procesando resultado y pagos...', 'success');
-        const sh = m.score_home ?? 0, sa = m.score_away ?? 0;
-        const { error: matchErr } = await sb.from('wc_matches').update({ status: 'finished', result, minute: 90, score_home: sh, score_away: sa }).eq('id', matchId);
-        if (matchErr) return notify('Error cerrando partido: ' + matchErr.message, 'error');
-        const pendingBets = this.bets.filter(b => b.status === 'pending' && b.picks && b.picks.some(p => p.matchId === matchId));
-        let paidCount = 0, lostCount = 0;
-        for (const bet of pendingBets) {
-            const thisPickWon = bet.picks.some(p => p.matchId === matchId && p.pick === result);
-            if (!thisPickWon) { await sb.from('wc_bets').update({ status: 'lost' }).eq('id', bet.id); lostCount++; continue; }
-            const allSettled = await this.checkAllPicksSettled(bet, matchId, result);
-            if (!allSettled.canPay) continue;
-            if (allSettled.won) { await this.payUser(bet.user_id, bet.potential_win, bet.id); paidCount++; }
-            else { await sb.from('wc_bets').update({ status: 'lost' }).eq('id', bet.id); lostCount++; }
-        }
-        notify(`✅ Resultado registrado. Pagados: ${paidCount} · Perdidos: ${lostCount}`, 'success');
-        await this.loadMatches(); await this.loadBets();
-    },
-
-    async checkAllPicksSettled(bet, newMatchId, newResult) {
-        for (const pick of bet.picks) {
-            const localResult = pick.matchId === newMatchId ? newResult : null;
-            const matchData = this.matches.find(m => m.id === pick.matchId);
-            const finalResult = localResult || matchData?.result;
-            if (!finalResult) return { canPay: false, won: false };
-            if (finalResult !== pick.pick) return { canPay: true, won: false };
-        }
-        return { canPay: true, won: true };
-    },
-
-    async payUser(userId, amount, betId) {
-        const { error: rpcErr } = await sb.rpc('modificar_saldo', { user_id: userId, monto: amount });
-        if (rpcErr) { const { data: u } = await sb.from('usuarios').select('saldo').eq('id', userId).single(); await sb.from('usuarios').update({ saldo: (u?.saldo || 0) + amount }).eq('id', userId); }
-        await sb.from('wc_bets').update({ status: 'won' }).eq('id', betId);
-        await sb.from('history').insert([{ user_id: userId, type: 'bets', amount, label: '⚽ GANANCIA MUNDIAL 2026', status: 'completed' }]);
-    },
-
-    async deleteMatch(matchId) {
-        if (!confirm('¿Eliminar este partido?')) return;
-        const { error } = await sb.from('wc_matches').delete().eq('id', matchId);
-        if (error) return notify('Error: ' + error.message, 'error');
-        notify('Partido eliminado', 'success'); await this.loadMatches();
-    },
-
-    renderBets() {
-        const tbody = document.getElementById('bets-tbody');
-        if (!this.bets.length) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#444;padding:40px;font-size:12px;text-transform:uppercase;">Sin apuestas registradas</td></tr>`; return; }
-        tbody.innerHTML = this.bets.slice(0, 200).map(b => {
-            const sc = b.status === 'won' ? '#10b981' : b.status === 'lost' ? '#ef4444' : '#fbbf24';
-            const st = b.status === 'won' ? '✅ Ganada' : b.status === 'lost' ? '❌ Perdida' : '⏳ Pendiente';
-            const picks = (b.picks || []).map(p => { const m = this.matches.find(x => x.id === p.matchId); return `<span style="display:block;font-size:9px;color:#888;">${m ? `${m.home} vs ${m.away}` : p.matchId}: <b style="color:white;">${p.label}</b> @ ${p.odd?.toFixed(2)}</span>`; }).join('');
-            const email = b.usuarios?.email || b.user_id?.slice(0, 12) + '...';
-            const d = new Date(b.created_at);
-            return `<tr>
-                <td style="font-size:10px;color:#aaa;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${email}">${email}</td>
-                <td><b>$${(b.amount||0).toFixed(2)}</b></td>
-                <td>${(b.total_odd||1).toFixed(2)}x</td>
-                <td style="color:#10b981;">$${(b.potential_win||0).toFixed(2)}</td>
-                <td>${picks}</td>
-                <td style="color:${sc};font-weight:700;">${st}</td>
-                <td style="font-size:9px;color:#555;">${d.toLocaleDateString('es-MX')}<br>${d.toTimeString().slice(0,5)}</td>
-            </tr>`;
-        }).join('');
-    },
-
-    setTab(tab) {
-        this.currentTab = tab;
-        document.getElementById('panel-matches').style.display = tab === 'matches' ? 'block' : 'none';
-        document.getElementById('panel-bets').style.display = tab === 'bets' ? 'block' : 'none';
-        document.getElementById('panel-users').style.display = tab === 'users' ? 'block' : 'none';
-        document.getElementById('panel-history').style.display = tab === 'history' ? 'block' : 'none';
-        document.getElementById('tab-matches').classList.toggle('active', tab === 'matches');
-        document.getElementById('tab-bets').classList.toggle('active', tab === 'bets');
-        document.getElementById('tab-users').classList.toggle('active', tab === 'users');
-        document.getElementById('tab-history').classList.toggle('active', tab === 'history');
-        if (tab === 'bets') this.renderBets();
-        if (tab === 'users') this.loadUsers();
-        if (tab === 'history') this.loadHistory();
+        sb.channel('admin_support_live')
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'support_messages'
+            }, async (payload) => {
+                console.log('🔔 Cambio en support_messages:', payload);
+                await this.loadConversations();
+                if (this.activeUserId) {
+                    this.openConversation(this.activeUserId);
+                }
+            })
+            .subscribe();
     }
 };
 
-const Modal = {
-    close() { document.getElementById('modal-match').classList.remove('open'); },
-    openAdd() {
-        document.getElementById('edit-match-id').value = '';
-        document.getElementById('modal-title').innerHTML = 'Agregar <span>Partido</span>';
-        ['f-home','f-away','f-odd1','f-oddx','f-odd2','f-date','f-time','f-group','f-venue'].forEach(id => document.getElementById(id).value = '');
-        document.getElementById('f-phase').value = 'Grupos';
-        document.getElementById('modal-match').classList.add('open');
-    },
-    openEdit(matchId) {
-        const m = Admin.matches.find(x => x.id === matchId);
-        if (!m) return;
-        document.getElementById('edit-match-id').value = matchId;
-        document.getElementById('modal-title').innerHTML = 'Editar <span>Partido</span>';
-        document.getElementById('f-home').value = m.home || '';
-        document.getElementById('f-away').value = m.away || '';
-        document.getElementById('f-odd1').value = m.home_odd || '';
-        document.getElementById('f-oddx').value = m.draw_odd || '';
-        document.getElementById('f-odd2').value = m.away_odd || '';
-        document.getElementById('f-date').value = m.match_date || '';
-        document.getElementById('f-time').value = m.match_time || '';
-        document.getElementById('f-group').value = m.group_name || '';
-        document.getElementById('f-venue').value = m.venue || '';
-        document.getElementById('f-phase').value = m.phase || 'Grupos';
-        document.getElementById('modal-match').classList.add('open');
-    },
-    async save() {
-        const id = document.getElementById('edit-match-id').value;
-        const home = document.getElementById('f-home').value.trim();
-        const away = document.getElementById('f-away').value.trim();
-        const odd1 = parseFloat(document.getElementById('f-odd1').value);
-        const oddx = parseFloat(document.getElementById('f-oddx').value);
-        const odd2 = parseFloat(document.getElementById('f-odd2').value);
-        const date = document.getElementById('f-date').value.trim();
-        const time = document.getElementById('f-time').value.trim();
-        const group = document.getElementById('f-group').value.trim().toUpperCase();
-        const venue = document.getElementById('f-venue').value.trim();
-        const phase = document.getElementById('f-phase').value;
-        if (!home || !away) return notify('Ingresa los equipos', 'error');
-        if (!odd1 || !oddx || !odd2) return notify('Ingresa las cuotas', 'error');
-        const payload = { home, away, home_odd: odd1, draw_odd: oddx, away_odd: odd2, match_date: date, match_time: time, group_name: group, venue, phase, status: 'upcoming', score_home: 0, score_away: 0, minute: 0, result: null };
-        let error;
-        if (id) { ({ error } = await sb.from('wc_matches').update(payload).eq('id', id)); }
-        else { ({ error } = await sb.from('wc_matches').insert([payload])); }
-        if (error) return notify('Error guardando: ' + error.message, 'error');
-        notify(id ? '✅ Partido actualizado' : '✅ Partido creado', 'success');
-        this.close(); await Admin.loadMatches();
-    }
-};
+        const AdminAuth = {
+            async login() {
+                const email = document.getElementById('admin-email').value.trim().toLowerCase();
+                const password = document.getElementById('admin-password').value;
+                if (!email || !password) { alert("Completa todos los campos."); return; }
+                if (email !== CORREO_ADMIN_AUTORIZADO.toLowerCase()) { alert("Acceso denegado."); return; }
+                const { data, error } = await sb.auth.signInWithPassword({ email, password });
+                if (error) { alert("Contraseña incorrecta: " + error.message); }
+                else { this.showPanel(); }
+            },
+            
+            async checkSession() {
+                const { data: { session } } = await sb.auth.getSession();
+                if (session && session.user.email.toLowerCase() === CORREO_ADMIN_AUTORIZADO.toLowerCase()) {
+                    this.showPanel();
+                } else if (session) { await sb.auth.signOut(); }
+            },
+            showPanel() {
+                document.getElementById('admin-login-view').classList.add('hidden-view');
+                document.getElementById('admin-panel-content').classList.remove('hidden-view');
+                loadPending();
+            },
+            async logout() { await sb.auth.signOut(); location.reload(); }
+        };
 
-Auth.check();
-</script>
+        function changeView(type) {
+    currentType = type;
+    document.getElementById('btn-dep').classList.toggle('tab-active', type === 'deposits');
+    document.getElementById('btn-dep').classList.toggle('text-zinc-500', type !== 'deposits');
+    document.getElementById('btn-with').classList.toggle('tab-active', type === 'withdrawals');
+    document.getElementById('btn-with').classList.toggle('text-zinc-500', type !== 'withdrawals');
+    document.getElementById('btn-support').classList.toggle('tab-active', type === 'support');
+    document.getElementById('btn-support').classList.toggle('text-zinc-500', type !== 'support');
+
+    document.getElementById('pending-list').classList.toggle('hidden-view', type === 'support');
+    document.getElementById('support-panel').classList.toggle('hidden-view', type !== 'support');
+
+    if (type === 'support') { AdminSupport.loadConversations(); }
+    else { loadPending(); }
+}
+
+        async function loadPending() {
+            const isDeposit = currentType === 'deposits';
+            let query = sb.from('history').select('*, usuarios(saldo)').eq('status', 'pending');
+            if (isDeposit) {
+                query = query.eq('type', 'deposits');
+            } else {
+                query = query.in('type', ['withdrawals', 'bets']).eq('label', 'RETIRO PENDIENTE');
+            }
+            const { data, error } = await query.order('created_at', { ascending: false });
+            const container = document.getElementById('pending-list');
+            if (error) return console.error(error);
+
+            container.innerHTML = (!data || data.length === 0) ?
+                `<p class="text-zinc-600">No hay ${isDeposit ? 'depósitos' : 'retiros'} pendientes.</p>` : '';
+
+            data.forEach(item => {
+                const currentSaldo = item.usuarios ? item.usuarios.saldo : 0;
+                let bancoDisplay = item.bank_name || 'No especificado';
+                let titularDisplay = item.account_holder || 'No especificado';
+                let clabeDisplay = 'No especificado';
+                if (!isDeposit && item.account_holder && item.account_holder.includes('| CLABE:')) {
+                    const partes = item.account_holder.split('| CLABE:');
+                    titularDisplay = partes[0].trim();
+                    clabeDisplay = partes[1].trim();
+                }
+
+                container.innerHTML += `
+                    <div class="bg-zinc-900 p-6 rounded-[2rem] border border-white/5 flex items-center justify-between">
+                        <div class="flex gap-6 items-center">
+                            <div class="w-32 h-32 bg-zinc-800 rounded-2xl flex items-center justify-center overflow-hidden border border-white/10">
+                                ${isDeposit && item.evidence_url ?
+                                    `<img src="${item.evidence_url}" class="w-full h-full object-cover cursor-pointer" onclick="window.open('${item.evidence_url}')">` :
+                                    `<div class="text-center"><p class="text-[10px] text-zinc-500 uppercase">Solicitud de</p><p class="font-black text-red-500">RETIRO</p></div>`}
+                            </div>
+                            <div>
+                                <p class="${isDeposit ? 'text-emerald-500' : 'text-red-500'} font-bold text-2xl tracking-tighter">
+                                    ${isDeposit ? '+' : '-'}$${Math.abs(item.amount)}
+                                </p>
+                                <div class="mt-2 space-y-1">
+                                    <p class="text-[10px] text-zinc-500 font-mono">USUARIO ID: ${item.user_id}</p>
+                                    <p class="text-[11px] text-white font-bold bg-white/5 px-2 py-1 rounded w-fit">BANCO: ${bancoDisplay}</p>
+                                    <p class="text-[11px] text-zinc-300 italic">TITULAR: ${titularDisplay}</p>
+                                    ${!isDeposit ? `<p class="text-[11px] text-yellow-500 font-mono bg-yellow-500/10 px-2 py-0.5 rounded w-fit font-bold">CLABE: ${clabeDisplay}</p>` : ''}
+                                    <p class="text-[10px] text-zinc-400 uppercase">SALDO ACTUAL: $${currentSaldo}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <button onclick="approveTransaction('${item.id}', '${item.user_id}', ${Math.abs(item.amount)}, ${currentSaldo})"
+                                class="${isDeposit ? 'bg-emerald-500' : 'bg-red-500'} text-black px-8 py-4 rounded-2xl font-black hover:opacity-80 transition-all uppercase text-sm">
+                                ${isDeposit ? 'Aprobar Carga' : 'Confirmar Envío'}
+                            </button>
+                            <button onclick="rejectTransaction('${item.id}', '${item.user_id}', ${Math.abs(item.amount)}, ${currentSaldo})"
+                                class="bg-zinc-800 text-zinc-400 px-8 py-4 rounded-2xl font-black border border-white/5 hover:bg-white/10 hover:text-white transition-all text-sm">
+                                RECHAZAR
+                            </button>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        async function esPrimerDeposito(userId) {
+            const { data: userData, error: userErr } = await sb
+                .from('usuarios')
+                .select('has_used_first_deposit_bonus')
+                .eq('id', userId)
+                .maybeSingle();
+
+            if (!userErr && userData) {
+                if (userData.has_used_first_deposit_bonus === true) return false;
+            }
+
+            const { data, error } = await sb
+                .from('history')
+                .select('id')
+                .eq('user_id', userId)
+                .eq('type', 'deposits')
+                .eq('status', 'completed')
+                .limit(1);
+            if (error) return false;
+            return !data || data.length === 0;
+        }
+
+        async function activarBonoMundial(userId, montoDeposito) {
+            const { data: existente } = await sb
+                .from('bonus_depositos')
+                .select('id')
+                .eq('user_id', userId)
+                .maybeSingle();
+            if (existente) return;
+
+            const { error } = await sb.from('bonus_depositos').insert([{
+                user_id: userId,
+                amount: montoDeposito,
+                status: 'active'
+            }]);
+            if (error) {
+                console.error('Error creando bono:', error);
+                return;
+            }
+
+            await sb.from('usuarios')
+                .update({ has_used_first_deposit_bonus: true })
+                .eq('id', userId);
+
+            console.log(`✅ Bono de $${montoDeposito} MXN activado para usuario ${userId}`);
+        }
+
+        async function approveTransaction(historyId, userId, amount, currentSaldo) {
+            const isDeposit = currentType === 'deposits';
+            if (!confirm(`¿Deseas ${isDeposit ? "aprobar este depósito" : "confirmar que ya enviaste el retiro"}?`)) return;
+
+            let esPrimero = false;
+            if (isDeposit) {
+                esPrimero = await esPrimerDeposito(userId);
+            }
+
+            const newSaldo = isDeposit ? (currentSaldo + amount) : currentSaldo;
+
+            const { error: errSaldo } = await sb.from('usuarios').update({ saldo: newSaldo }).eq('id', userId);
+            const { error: errHist } = await sb.from('history').update({
+                status: 'completed',
+                label: isDeposit ? 'DEPÓSITO APROBADO' : 'RETIRO ENVIADO CORECTAMENTE'
+            }).eq('id', historyId);
+
+            if (!errSaldo && !errHist) {
+                if (isDeposit && esPrimero) {
+                    await activarBonoMundial(userId, amount);
+                    alert(`✅ Depósito aprobado.\n🎁 Bono de $${amount} MXN activado automáticamente para el usuario.`);
+                } else {
+                    alert("Transacción finalizada con éxito.");
+                }
+                loadPending();
+            } else {
+                alert("Hubo un error. Revisa la consola.");
+                console.error(errSaldo, errHist);
+            }
+        }
+
+        async function rejectTransaction(historyId, userId, amount, currentSaldo) {
+            const isDeposit = currentType === 'deposits';
+            if (!confirm("¿Rechazar esta solicitud?")) return;
+            if (!isDeposit) {
+                await sb.from('usuarios').update({ saldo: currentSaldo + amount }).eq('id', userId);
+            }
+            const label = isDeposit ? 'DEPÓSITO RECHAZADO' : 'RETIRO RECHAZADO';
+            await sb.from('history').update({ status: 'rejected', label }).eq('id', historyId);
+            loadPending();
+        }
+
+        AdminAuth.checkSession();
+        setInterval(() => {
+            const viewLogin = document.getElementById('admin-login-view');
+            if (viewLogin && viewLogin.classList.contains('hidden-view')) loadPending();
+        }, 5000);
+    </script>
 </body>
 </html>
