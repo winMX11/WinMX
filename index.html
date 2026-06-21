@@ -4,6 +4,149 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Frecuencia — Sala de DJ compartida</title>
+
+<!-- =====================================================================
+     SIGNAL SHIELD — bloqueador de anuncios/popups/trackers de terceros
+     =====================================================================
+     Protege esta página específicamente. No bloquea anuncios en YouTube
+     mismo (el iframe embebido corre en el dominio de YouTube, fuera del
+     alcance de un script en esta página) — solo bloquea anuncios/popups
+     que pudieran inyectarse en el propio sitio "Frecuencia" desde scripts
+     de terceros que decidas añadir en el futuro (widgets, comentarios, etc).
+     Se ejecuta antes que cualquier otro script, incluido el SDK de Supabase
+     y el IFrame API de YouTube.
+===================================================================== -->
+<script>
+(function () {
+"use strict";
+
+// 1) Oculta por CSS elementos típicos de anuncios/popups
+var cosmeticCSS = [
+  '[id*="google_ads"]', '[id*="ad-banner"]', '[id*="ad-container"]',
+  '[id*="adsbygoogle"]', '[class*="ad-banner"]', '[class*="ad-container"]',
+  '[class*="ads-wrapper"]', '[class*="advertisement"]', '[class*="sponsored-content"]',
+  '[class^="ad-"]', '[class*=" ad-"]', '[class$="-ad"]',
+  '[data-ad-slot]', '[data-ad-client]', '[data-ad-unit]',
+  'ins.adsbygoogle', 'iframe[src*="doubleclick.net"]', 'iframe[src*="googlesyndication.com"]',
+  'iframe[src*="adnxs.com"]', '.popup-overlay[class*="ad"]', '.modal-ad', '.interstitial-ad'
+].join(", ") + " { display: none !important; visibility: hidden !important; height: 0 !important; }";
+
+var styleTag = document.createElement("style");
+styleTag.id = "signal-shield-cosmetic";
+styleTag.textContent = cosmeticCSS;
+document.documentElement.appendChild(styleTag);
+
+// 2) Dominios publicitarios/de tracking a bloquear.
+//    NOTA: googleapis.com, youtube.com, ytimg.com y supabase.co NO están
+//    en esta lista a propósito — Frecuencia los necesita para funcionar
+//    (búsqueda de YouTube, reproductor embebido, base de datos en vivo).
+var BLOCKED_DOMAINS = [
+  "doubleclick.net", "googlesyndication.com", "googleadservices.com",
+  "google-analytics.com", "googletagmanager.com", "adnxs.com",
+  "outbrain.com", "taboola.com", "criteo.com", "pubmatic.com",
+  "rubiconproject.com", "scorecardresearch.com", "moatads.com",
+  "adsrvr.org", "advertising.com", "adsafeprotected.com",
+  "popads.net", "propellerads.com", "adcash.com", "exoclick.com"
+];
+
+function isBlockedUrl(url) {
+  if (!url) return false;
+  try {
+    var host = new URL(url, window.location.href).hostname;
+    return BLOCKED_DOMAINS.some(function (domain) {
+      return host === domain || host.endsWith("." + domain);
+    });
+  } catch (_) {
+    return false;
+  }
+}
+
+// Bloqueo a nivel de fetch() — no afecta las llamadas de Frecuencia a
+// googleapis.com (búsqueda de YouTube) ni a Supabase.
+var nativeFetch = window.fetch;
+window.fetch = function (input, init) {
+  var url = typeof input === "string" ? input : (input && input.url);
+  if (isBlockedUrl(url)) {
+    console.warn("[SHIELD] Petición bloqueada (fetch):", url);
+    return Promise.reject(new Error("Bloqueado por SHIELD"));
+  }
+  return nativeFetch.apply(this, arguments);
+};
+
+// Bloqueo a nivel de XMLHttpRequest
+var nativeXhrOpen = XMLHttpRequest.prototype.open;
+XMLHttpRequest.prototype.open = function (method, url) {
+  if (isBlockedUrl(url)) {
+    console.warn("[SHIELD] Petición bloqueada (XHR):", url);
+    throw new Error("Bloqueado por SHIELD");
+  }
+  return nativeXhrOpen.apply(this, arguments);
+};
+
+// 3) Bloqueo de popups no solicitados (solo permite los que vienen de
+//    un clic/tap real del usuario, dentro del segundo siguiente)
+var nativeOpenWindow = window.open;
+var lastUserGesture = 0;
+["click", "touchend"].forEach(function (evt) {
+  document.addEventListener(evt, function () {
+    lastUserGesture = Date.now();
+  }, true);
+});
+
+window.open = function (url, target, features) {
+  var withinUserGesture = Date.now() - lastUserGesture < 1000;
+  if (!withinUserGesture) {
+    console.warn("[SHIELD] Popup bloqueado (sin interacción del usuario):", url);
+    return null;
+  }
+  if (isBlockedUrl(url)) {
+    console.warn("[SHIELD] Popup bloqueado (dominio publicitario):", url);
+    return null;
+  }
+  return nativeOpenWindow.apply(this, arguments);
+};
+
+// 4) Elimina anuncios insertados dinámicamente después de cargar la página
+var AD_NODE_SELECTOR = cosmeticCSS.split(" { ")[0];
+
+function purgeAdNodes(root) {
+  try {
+    root.querySelectorAll(AD_NODE_SELECTOR).forEach(function (node) {
+      node.remove();
+    });
+  } catch (_) {}
+}
+
+var shieldObserver = new MutationObserver(function (mutations) {
+  mutations.forEach(function (mutation) {
+    mutation.addedNodes.forEach(function (node) {
+      if (node.nodeType !== 1) return; // solo elementos
+      try {
+        if (node.matches && node.matches(AD_NODE_SELECTOR)) {
+          node.remove();
+          return;
+        }
+      } catch (_) {}
+      purgeAdNodes(node);
+
+      if ((node.tagName === "IFRAME" || node.tagName === "SCRIPT") && isBlockedUrl(node.src)) {
+        console.warn("[SHIELD] Elemento bloqueado por dominio:", node.tagName, node.src);
+        node.remove();
+      }
+    });
+  });
+});
+
+shieldObserver.observe(document.documentElement, { childList: true, subtree: true });
+
+document.addEventListener("DOMContentLoaded", function () {
+  purgeAdNodes(document.documentElement);
+});
+
+})();
+</script>
+<!-- ===================== FIN SIGNAL SHIELD ===================== -->
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
