@@ -1087,6 +1087,16 @@ async function startSearching() {
   resetCallUI();
   searchingSub.textContent = "Escaneando usuarios disponibles";
 
+  // Si ya había un matchmaker previo (p.ej. al pulsar "siguiente"),
+  // hay que destruir por completo su canal de lobby antes de crear
+  // uno nuevo: ambos comparten el mismo topic ("signal-lobby"), y
+  // Supabase Realtime devuelve el canal existente si ya está
+  // SUBSCRIBED en vez de crear uno nuevo, lo que provocaba el error
+  // "cannot add presence callbacks after subscribe()".
+  if (matchmaker) {
+    await matchmaker.reset();
+  }
+
   matchmaker = new Matchmaker();
 
   matchmaker.onPresenceCount = (count) => {
