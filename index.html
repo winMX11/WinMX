@@ -161,7 +161,22 @@
   .np-empty{color:var(--dim2); font-size:13px; padding:30px 0;}
   .progress-track{height:4px; background:var(--line); border-radius:4px; margin-top:18px; overflow:hidden;}
   .progress-fill{height:100%; background:linear-gradient(90deg, var(--magenta), var(--amber)); width:0%; transition:width .3s linear;}
-  .yt-mount{position:absolute; width:1px; height:1px; opacity:0; pointer-events:none;}
+  .player-box{
+    width:100%; aspect-ratio:16/9; margin-top:16px; border-radius:10px; overflow:hidden;
+    border:1px solid var(--line); background:#000;
+  }
+  .player-box iframe{width:100%; height:100%; display:block;}
+  .ad-note{
+    margin-top:10px; font-size:11.5px; line-height:1.5; color:var(--dim);
+    background:var(--bg-panel); border:1px solid var(--line); border-radius:10px; padding:10px 12px; text-align:left;
+  }
+  .ublock-btn{
+    width:100%; margin-top:10px; padding:11px;
+    background:linear-gradient(135deg,rgba(255,182,39,.12),rgba(255,182,39,.06));
+    border:1px solid rgba(255,182,39,.4); color:var(--amber);
+    font-weight:600; font-size:13px; border-radius:10px; transition:.15s;
+  }
+  .ublock-btn:hover{background:rgba(255,182,39,.2); border-color:var(--amber);}
 
   .stage-actions{display:flex; gap:8px; margin-top:18px;}
   .icon-btn{
@@ -302,8 +317,16 @@
             <div class="np-empty">Nada en el aire todavía.<br>Agrega la primera canción →</div>
           </div>
           <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+          <div class="player-box" id="ytmount"></div>
+          <div class="ad-note">
+            📺 Este reproductor es de YouTube y puede mostrar un anuncio antes de la canción.
+            Si aparece, usa el botón <b>«Saltar anuncio»</b> que YouTube muestra dentro del recuadro de arriba
+            (normalmente se activa a los 5 segundos, y solo si ese anuncio es de los que se pueden saltar).
+          </div>
+          <button class="icon-btn ublock-btn" id="ublockBtn" onclick="openUblock()">
+            🛡️ Instalar bloqueador de anuncios
+          </button>
           <div class="stage-actions">
-            <button class="icon-btn" id="skipBtn">⏭ Saltar</button>
             <button class="icon-btn" id="muteBtn">🔇 Activar audio</button>
           </div>
         </div>
@@ -594,11 +617,6 @@ async function advanceQueue(){
   await supa.from('queue').delete().eq('id', song.id);
 }
 
-document.getElementById('skipBtn').addEventListener('click', async ()=>{
-  await advanceQueue();
-  toast("Canción saltada");
-});
-
 document.getElementById('muteBtn').addEventListener('click', ()=>{
   muted = !muted;
   const btn = document.getElementById('muteBtn');
@@ -621,13 +639,9 @@ setInterval(async ()=>{
 // YouTube IFrame Player
 // ---------------------------------------------------------------
 function onYouTubeIframeAPIReady(){
-  const mount = document.createElement('div');
-  mount.id = 'ytmount';
-  mount.className = 'yt-mount';
-  document.body.appendChild(mount);
   ytPlayer = new YT.Player('ytmount', {
-    height: '1', width: '1',
-    playerVars: { autoplay: 1, controls: 0, disablekb: 1, modestbranding: 1, rel: 0, playsinline: 1 },
+    height: '100%', width: '100%',
+    playerVars: { autoplay: 1, controls: 1, modestbranding: 1, rel: 0, playsinline: 1 },
     events: {
       onReady: ()=>{
         ytReady = true;
@@ -752,10 +766,80 @@ function subscribeRealtime(){
   }
 })();
 
+function openUblock(){
+  const ua = navigator.userAgent;
+  let url;
+  if (/Firefox/i.test(ua)){
+    url = "https://addons.mozilla.org/es/firefox/addon/ublock-origin/";
+  } else if (/Edg/i.test(ua)){
+    url = "https://microsoftedge.microsoft.com/addons/detail/ublock-origin/odfafepnkmbhccpbejgmiehpchacaeak";
+  } else if (/OPR|Opera/i.test(ua)){
+    url = "https://addons.opera.com/es/extensions/details/ublock/";
+  } else {
+    // Chrome, Brave, y derivados de Chromium
+    url = "https://chromewebstore.google.com/detail/ublock-origin/cjpalhdlnbpafiamejdnhcphjbkeiagm";
+  }
+  window.open(url, "_blank", "noopener");
+  toast("Ábrelo, da clic en 'Agregar' y recarga esta página 🛡️");
+}
+
 initSupabase();
 showConfigWarningIfNeeded();
 </script>
 
+<!-- ================================================================
+SQL DE CONFIGURACIÓN — corre esto una vez en el SQL Editor de tu
+proyecto de Supabase (gratis, supabase.com) antes de usar la app.
+Después activa Realtime para las 3 tablas en Database → Replication.
 
+create extension if not exists pgcrypto;
+
+create table rooms (
+  id text primary key,
+  name text,
+  created_at timestamptz default now()
+);
+
+create table queue (
+  id uuid primary key default gen_random_uuid(),
+  room_id text references rooms(id) on delete cascade,
+  video_id text not null,
+  title text not null,
+  thumbnail text,
+  channel text,
+  added_by text,
+  position bigint not null,
+  created_at timestamptz default now()
+);
+
+create table now_playing (
+  room_id text primary key references rooms(id) on delete cascade,
+  video_id text not null,
+  title text,
+  thumbnail text,
+  channel text,
+  started_at timestamptz not null
+);
+
+create table messages (
+  id uuid primary key default gen_random_uuid(),
+  room_id text references rooms(id) on delete cascade,
+  username text,
+  content text,
+  system boolean default false,
+  created_at timestamptz default now()
+);
+
+-- RLS abierto para anon (proyecto sin login). Si crece, restringe esto.
+alter table rooms enable row level security;
+alter table queue enable row level security;
+alter table now_playing enable row level security;
+alter table messages enable row level security;
+
+create policy "anon all rooms" on rooms for all using (true) with check (true);
+create policy "anon all queue" on queue for all using (true) with check (true);
+create policy "anon all now_playing" on now_playing for all using (true) with check (true);
+create policy "anon all messages" on messages for all using (true) with check (true);
+================================================================ -->
 </body>
 </html>
